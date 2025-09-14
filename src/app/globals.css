@@ -120,3 +120,8 @@
     @apply bg-background text-foreground;
   }
 }
+
+.fun-stuff {
+  text-shadow: 0 0 20px #833339;
+  @apply p-[2px] rounded bg-white/10 text-[#ffe2e2];
+}
