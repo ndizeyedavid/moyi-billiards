@@ -1,73 +1,52 @@
 "use client";
 
-import React from "react";
+import React, { useEffect, useState } from "react";
 import { cn } from "@/lib/utils";
 import { motion } from "framer-motion";
 import Image from "next/image";
 
 interface TeamMember {
-  name: string;
+  id: string;
+  firstName: string;
+  lastName: string;
   role: string;
-  imageUrl: string;
+  department: string;
+  avatar?: string;
+  skills: string[];
+  startDate: string;
 }
 
 interface TeamProps {
   title?: string;
   subtitle?: string;
-  members?: TeamMember[];
   className?: string;
 }
-
-// Default team members data
-const defaultMembers: TeamMember[] = [
-  {
-    name: "Robert Brown",
-    role: "CEO & Co-Founder",
-    imageUrl: "https://i.pravatar.cc",
-  },
-  {
-    name: "Leslie Livingston",
-    role: "CTO & Co-Founder",
-    imageUrl: "https://i.pravatar.cc",
-  },
-  {
-    name: "Joseph McFall",
-    role: "Front-end Developer",
-    imageUrl: "https://i.pravatar.cc",
-  },
-  {
-    name: "Helene Engels",
-    role: "Front-end Developer",
-    imageUrl: "https://i.pravatar.cc",
-  },
-  {
-    name: "Thom Belly",
-    role: "UI/UX Designer",
-    imageUrl: "https://i.pravatar.cc",
-  },
-  {
-    name: "Bonnie Green",
-    role: "Product Manager",
-    imageUrl: "https://i.pravatar.cc",
-  },
-  {
-    name: "Roberta Casas",
-    role: "Content Strategist",
-    imageUrl: "https://i.pravatar.cc",
-  },
-  {
-    name: "Jesse Leos",
-    role: "Back-end Developer",
-    imageUrl: "https://i.pravatar.cc",
-  },
-];
 
 export default function Team({
   title = "Our people make us great",
   subtitle = "You'll interact with talented professionals, will be challenged to solve difficult problems and think in new and creative ways.",
-  members = defaultMembers,
   className,
 }: TeamProps) {
+  const [teamMembers, setTeamMembers] = useState<TeamMember[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchTeamMembers = async () => {
+      try {
+        const response = await fetch("/api/public/team-members");
+        if (response.ok) {
+          const data = await response.json();
+          setTeamMembers(data.teamMembers || []);
+        }
+      } catch (error) {
+        console.error("Error fetching team members:", error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchTeamMembers();
+  }, []);
   return (
     <section
       className={cn(
@@ -99,9 +78,25 @@ export default function Team({
 
         {/* Team members grid */}
         <div className="mx-auto grid max-w-7xl grid-cols-1 gap-6 sm:grid-cols-2 md:grid-cols-3 md:gap-8 lg:grid-cols-4">
-          {members.map((member, index) => (
-            <TeamMemberCard key={member.name} member={member} index={index} />
-          ))}
+          {loading ? (
+            // Loading skeleton
+            Array.from({ length: 8 }).map((_, i) => (
+              <div key={i} className="animate-pulse">
+                <div className="bg-gray-700 aspect-square rounded-xl mb-4"></div>
+                <div className="bg-gray-600 h-4 rounded mb-2"></div>
+                <div className="bg-gray-600 h-3 rounded w-3/4"></div>
+              </div>
+            ))
+          ) : teamMembers.length > 0 ? (
+            teamMembers.map((member, index) => (
+              <TeamMemberCard key={member.id} member={member} index={index} />
+            ))
+          ) : (
+            <div className="col-span-full text-center py-12">
+              <h3 className="text-lg font-semibold mb-2">No team members found</h3>
+              <p className="text-muted-foreground">Check back soon to meet our team!</p>
+            </div>
+          )}
         </div>
       </div>
     </section>
@@ -115,6 +110,9 @@ function TeamMemberCard({
   member: TeamMember;
   index: number;
 }) {
+  const fullName = `${member.firstName} ${member.lastName}`;
+  const imageUrl = member.avatar || `https://i.pravatar.cc/300?u=${member.id}`;
+
   return (
     <motion.div
       initial={{ opacity: 0, y: 20 }}
@@ -127,8 +125,8 @@ function TeamMemberCard({
       <div className="bg-muted relative aspect-square overflow-hidden rounded-xl">
         <div className="from-background/80 absolute inset-0 z-10 bg-gradient-to-t via-transparent to-transparent opacity-0 transition-opacity duration-300 group-hover:opacity-100" />
         <Image
-          src={member.imageUrl}
-          alt={member.name}
+          src={imageUrl}
+          alt={fullName}
           width={300}
           height={300}
           sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 25vw"
@@ -138,8 +136,26 @@ function TeamMemberCard({
 
       {/* Name and role */}
       <div className="mt-4 text-center">
-        <h3 className="text-lg font-semibold">{member.name}</h3>
+        <h3 className="text-lg font-semibold">{fullName}</h3>
         <p className="text-primary text-sm">{member.role}</p>
+        <p className="text-muted-foreground text-xs mt-1">{member.department}</p>
+        {member.skills && member.skills.length > 0 && (
+          <div className="flex flex-wrap gap-1 justify-center mt-2">
+            {member.skills.slice(0, 3).map((skill, skillIndex) => (
+              <span
+                key={skillIndex}
+                className="bg-primary/10 text-primary px-2 py-1 rounded-full text-xs"
+              >
+                {skill}
+              </span>
+            ))}
+            {member.skills.length > 3 && (
+              <span className="text-muted-foreground text-xs">
+                +{member.skills.length - 3} more
+              </span>
+            )}
+          </div>
+        )}
       </div>
     </motion.div>
   );

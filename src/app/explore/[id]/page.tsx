@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { notFound } from "next/navigation";
 import Image from "next/image";
 import Link from "next/link";
@@ -16,6 +16,7 @@ import {
   Truck,
   Shield,
   Award,
+  Loader2,
 } from "lucide-react";
 
 import Footer from "@/components/Footer";
@@ -26,57 +27,21 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
-// Mock product data - in a real app, this would come from an API or database
-const getProductById = (id: string) => {
-  const products = {
-    "1": {
-      id: "1",
-      name: "Premium Cotton Wrapped Billiard Table",
-      price: "69,000,000 RWF",
-      originalPrice: "75,000,000 RWF",
-      discount: "8% OFF",
-      rating: 4.8,
-      reviewCount: 24,
-      inStock: true,
-      category: "Pool Tables",
-      brand: "Moyi Billiards",
-      images: [
-        "/tables/table1.png",
-        "/tables/table2.webp",
-        "/tables/table3.png",
-        "/tables/table4.jpeg",
-      ],
-      description:
-        "Professional-grade billiard table with premium cotton wrapping. Perfect for tournaments and serious players. Features precision-engineered slate bed and championship-quality cushions.",
-      features: [
-        "Premium cotton cloth surface",
-        "3-piece slate bed construction",
-        "Championship rubber cushions",
-        "Solid hardwood frame",
-        "Professional pocket design",
-        "Adjustable leg levelers",
-      ],
-      specifications: {
-        Dimensions: "9ft x 4.5ft (2.74m x 1.37m)",
-        "Playing Surface": "8ft x 4ft (2.44m x 1.22m)",
-        Height: "32 inches (81cm)",
-        Weight: "850 lbs (385kg)",
-        "Slate Thickness": "1 inch (25mm)",
-        "Cloth Material": "Premium Cotton Blend",
-        "Frame Material": "Solid Oak Wood",
-        "Pocket Style": "Drop pockets with leather nets",
-      },
-      supplier: {
-        name: "Moyi Billiards Rwanda",
-        phone: "+250788123456",
-        whatsappMessage:
-          "Hello! I'm interested in the Premium Cotton Wrapped Billiard Table (Product ID: 1). Could you please provide more information about availability and delivery?",
-      },
-    },
-  };
-
-  return products[id as keyof typeof products] || null;
-};
+interface Product {
+  id: string;
+  name: string;
+  description: string;
+  price: number;
+  currency: string;
+  category: string;
+  featured: boolean;
+  images: string[];
+  slug: string;
+  stock: number;
+  specifications?: any; // JSON field from database
+  createdAt: string;
+  updatedAt: string;
+}
 
 interface PageProps {
   params: Promise<{ id: string }>;
@@ -85,9 +50,54 @@ interface PageProps {
 export default function ProductDetailPage({ params }: PageProps) {
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
   const [isLiked, setIsLiked] = useState(false);
+  const [product, setProduct] = useState<Product | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [productId, setProductId] = useState<string>("");
 
-  // In a real app, you'd await the params and fetch data
-  const product = getProductById("1"); // Using "1" as default for demo
+  useEffect(() => {
+    const getParams = async () => {
+      const resolvedParams = await params;
+      setProductId(resolvedParams.id);
+    };
+    getParams();
+  }, [params]);
+
+  useEffect(() => {
+    if (!productId) return;
+
+    const fetchProduct = async () => {
+      try {
+        const response = await fetch(`/api/public/products/${productId}`);
+        if (response.ok) {
+          const data = await response.json();
+          setProduct(data.product);
+        } else if (response.status === 404) {
+          notFound();
+        }
+      } catch (error) {
+        console.error("Error fetching product:", error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchProduct();
+  }, [productId]);
+
+  if (loading) {
+    return (
+      <>
+        <Header />
+        <div className="min-h-screen bg-background pt-24 mt-[30px] pb-12 flex items-center justify-center">
+          <div className="text-center">
+            <Loader2 className="h-8 w-8 animate-spin mx-auto mb-4" />
+            <p className="text-muted-foreground">Loading product details...</p>
+          </div>
+        </div>
+        <Footer />
+      </>
+    );
+  }
 
   if (!product) {
     notFound();
@@ -106,11 +116,10 @@ export default function ProductDetailPage({ params }: PageProps) {
   };
 
   const handleWhatsAppContact = () => {
-    const message = encodeURIComponent(product.supplier.whatsappMessage);
-    const whatsappUrl = `https://wa.me/${product.supplier.phone.replace(
-      /[^0-9]/g,
-      ""
-    )}?text=${message}`;
+    const message = encodeURIComponent(
+      `Hello! I'm interested in the ${product.name} (Product ID: ${product.id}). Could you please provide more information about availability and delivery?`
+    );
+    const whatsappUrl = `https://wa.me/250790194868?text=${message}`;
     window.open(whatsappUrl, "_blank");
   };
 
@@ -211,42 +220,23 @@ export default function ProductDetailPage({ params }: PageProps) {
               <div>
                 <div className="flex items-center gap-2 mb-2">
                   <Badge variant="secondary">{product.category}</Badge>
-                  <Badge
-                    variant="outline"
-                    className="text-rose-600 border-rose-600"
-                  >
-                    {product.discount}
-                  </Badge>
+                  {product.featured && (
+                    <Badge
+                      variant="outline"
+                      className="text-rose-600 border-rose-600"
+                    >
+                      Featured
+                    </Badge>
+                  )}
                 </div>
 
                 <h1 className="text-3xl font-bold text-foreground mb-4">
                   {product.name}
                 </h1>
 
-                <div className="flex items-center gap-4 mb-4">
-                  <div className="flex items-center gap-1">
-                    {[...Array(5)].map((_, i) => (
-                      <Star
-                        key={i}
-                        className={`h-4 w-4 ${
-                          i < Math.floor(product.rating)
-                            ? "fill-yellow-400 text-yellow-400"
-                            : "text-muted-foreground"
-                        }`}
-                      />
-                    ))}
-                    <span className="text-sm text-muted-foreground ml-1">
-                      {product.rating} ({product.reviewCount} reviews)
-                    </span>
-                  </div>
-                </div>
-
                 <div className="flex items-baseline gap-3 mb-6">
                   <span className="text-3xl font-bold text-foreground">
-                    {product.price}
-                  </span>
-                  <span className="text-lg text-muted-foreground line-through">
-                    {product.originalPrice}
+                    {product.price.toLocaleString()} {product.currency}
                   </span>
                 </div>
 
@@ -258,29 +248,30 @@ export default function ProductDetailPage({ params }: PageProps) {
                 <div className="flex items-center gap-2 mb-6">
                   <div
                     className={`w-2 h-2 rounded-full ${
-                      product.inStock ? "bg-green-500" : "bg-red-500"
+                      product.stock > 0 ? "bg-green-500" : "bg-red-500"
                     }`}
                   />
                   <span
                     className={`text-sm font-medium ${
-                      product.inStock ? "text-green-600" : "text-red-600"
+                      product.stock > 0 ? "text-green-600" : "text-red-600"
                     }`}
                   >
-                    {product.inStock ? "In Stock" : "Out of Stock"}
+                    {product.stock > 0
+                      ? `${product.stock} in stock`
+                      : "Out of Stock"}
                   </span>
                 </div>
 
                 {/* Action Buttons */}
                 <div className="flex flex-col gap-4">
-                  <Link href={"https://wa.me/250790194868"}>
-                    <Button
-                      className="w-full bg-green-600 hover:bg-green-700 text-white py-6 text-lg font-semibold"
-                      disabled={!product.inStock}
-                    >
-                      <MessageCircle className="h-5 w-5 mr-2" />
-                      Contact Supplier on WhatsApp
-                    </Button>
-                  </Link>
+                  <Button
+                    className="w-full bg-green-600 hover:bg-green-700 text-white py-6 text-lg font-semibold"
+                    disabled={product.stock === 0}
+                    onClick={handleWhatsAppContact}
+                  >
+                    <MessageCircle className="h-5 w-5 mr-2" />
+                    Contact Supplier on WhatsApp
+                  </Button>
 
                   <div className="flex gap-3">
                     <Button
@@ -324,29 +315,10 @@ export default function ProductDetailPage({ params }: PageProps) {
 
           {/* Product Details Tabs */}
           <div className="mt-16">
-            <Tabs defaultValue="features" className="w-full">
-              <TabsList className="grid w-full grid-cols-2">
-                <TabsTrigger value="features">Features</TabsTrigger>
+            <Tabs defaultValue="specifications" className="w-full">
+              <TabsList className="grid w-full grid-cols-1">
                 <TabsTrigger value="specifications">Specifications</TabsTrigger>
               </TabsList>
-
-              <TabsContent value="features" className="mt-6">
-                <Card>
-                  <CardHeader>
-                    <CardTitle>Key Features</CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                      {product.features.map((feature, index) => (
-                        <div key={index} className="flex items-center gap-3">
-                          <Check className="h-5 w-5 text-green-600 flex-shrink-0" />
-                          <span>{feature}</span>
-                        </div>
-                      ))}
-                    </div>
-                  </CardContent>
-                </Card>
-              </TabsContent>
 
               <TabsContent value="specifications" className="mt-6">
                 <Card>
@@ -354,21 +326,39 @@ export default function ProductDetailPage({ params }: PageProps) {
                     <CardTitle>Technical Specifications</CardTitle>
                   </CardHeader>
                   <CardContent>
-                    <div className="space-y-4">
-                      {Object.entries(product.specifications).map(
-                        ([key, value]) => (
-                          <div
-                            key={key}
-                            className="flex justify-between py-2 border-b border-border last:border-0"
-                          >
-                            <span className="font-medium text-muted-foreground">
-                              {key}
-                            </span>
-                            <span className="text-foreground">{value}</span>
-                          </div>
-                        )
-                      )}
-                    </div>
+                    {product.specifications &&
+                    typeof product.specifications === "object" ? (
+                      <div className="space-y-4">
+                        {Object.entries(product.specifications)
+                          .filter(([key]) => key !== "features") // Exclude features from specs
+                          .map(([key, value]) => (
+                            <div
+                              key={key}
+                              className="flex justify-between py-2 border-b border-border last:border-0"
+                            >
+                              <span className="font-medium text-muted-foreground">
+                                {key.charAt(0).toUpperCase() + key.slice(1)}
+                              </span>
+                              <span className="text-foreground">
+                                {typeof value === "string"
+                                  ? value
+                                  : JSON.stringify(value)}
+                              </span>
+                            </div>
+                          ))}
+                        {Object.keys(product.specifications).filter(
+                          (key) => key !== "features"
+                        ).length === 0 && (
+                          <p className="text-muted-foreground">
+                            No specifications available.
+                          </p>
+                        )}
+                      </div>
+                    ) : (
+                      <p className="text-muted-foreground">
+                        No specifications available.
+                      </p>
+                    )}
                   </CardContent>
                 </Card>
               </TabsContent>

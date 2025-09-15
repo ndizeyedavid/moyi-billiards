@@ -6,6 +6,7 @@ import { Menu, X, ChevronDown, ArrowRight, Sparkles } from "lucide-react";
 import Link from "next/link";
 import { useTheme } from "next-themes";
 import Image from "next/image";
+import { Product } from "@prisma/client";
 
 interface NavItem {
   name: string;
@@ -44,7 +45,27 @@ export default function Header() {
   const [isScrolled, setIsScrolled] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [activeDropdown, setActiveDropdown] = useState<string | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [products, setProducts] = useState<Product[]>([]);
   const { theme } = useTheme();
+
+  useEffect(() => {
+    const fetchProducts = async () => {
+      try {
+        const response = await fetch("/api/public/products?limit=50");
+        if (response.ok) {
+          const data = await response.json();
+          setProducts(data.products || []);
+        }
+      } catch (error) {
+        console.error("Error fetching products:", error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchProducts();
+  }, []);
 
   useEffect(() => {
     const handleScroll = () => {
@@ -146,19 +167,21 @@ export default function Header() {
                         exit="hidden"
                         transition={{ duration: 0.2 }}
                       >
-                        {item.dropdownItems?.map((dropdownItem) => (
+                        {products?.map((product) => (
                           <Link
                             prefetch={false}
-                            key={dropdownItem.name}
-                            href={dropdownItem.href}
+                            key={product.id}
+                            href={"/explore/" + product.id}
                             className="hover:bg-muted block px-4 py-3 transition-colors duration-200"
                           >
                             <div className="text-foreground font-medium">
-                              {dropdownItem.name}
+                              {product.name}
                             </div>
-                            {dropdownItem.description && (
+                            {product.description && (
                               <div className="text-muted-foreground text-sm">
-                                {dropdownItem.description}
+                                {product.category} -{" "}
+                                {Number(product.price).toLocaleString()}{" "}
+                                {product.currency}
                               </div>
                             )}
                           </Link>

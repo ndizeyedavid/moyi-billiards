@@ -18,6 +18,7 @@ import {
   Tag,
   ChevronRight,
   MessageCircle,
+  Loader2,
 } from "lucide-react";
 
 import Footer from "@/components/Footer";
@@ -27,73 +28,37 @@ import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
 
-// Mock article data - in a real app, this would come from an API or database
-const getArticleById = (id: string) => {
-  const articles = {
-    "1wsasd": {
-      id: "1wsasd",
-      title:
-        "The Evolution of Professional Pool Tables: A Deep Dive into Modern Craftsmanship",
-      description:
-        "Discover how pool table manufacturing has evolved over the decades, from traditional craftsmanship to modern precision engineering.",
-      content: `
-        <p>The world of professional pool tables has undergone a remarkable transformation over the past few decades. What once relied purely on traditional woodworking techniques now incorporates cutting-edge technology and precision engineering to create tables that meet the exacting standards of professional tournaments.</p>
+interface BlogPost {
+  id: string;
+  title: string;
+  slug: string;
+  content: string;
+  excerpt: string;
+  author: string;
+  status: string;
+  publishedAt: string;
+  category: string;
+  tags: string[];
+  featured: boolean;
+  featuredImage: string | null;
+  metaTitle: string | null;
+  metaDescription: string | null;
+  readTime: number | null;
+  wordCount: number | null;
+  createdAt: string;
+  updatedAt: string;
+}
 
-        <h2>The Foundation: Slate Bed Technology</h2>
-        <p>At the heart of every premium pool table lies the slate bed - a crucial component that determines the table's playing characteristics. Modern slate beds are precision-machined to tolerances of less than 0.1mm, ensuring a perfectly level playing surface that remains consistent across the entire table.</p>
-
-        <p>The process begins with carefully selected slate quarried from specific regions known for their dense, uniform stone. Each piece undergoes rigorous quality testing before being shaped and polished to exacting specifications.</p>
-
-        <h2>Cushion Innovation</h2>
-        <p>The rubber cushions that line the rails of a pool table have also seen significant advancement. Modern cushions use specially formulated rubber compounds that provide consistent rebound characteristics across a wide temperature range. This ensures that the table plays the same whether it's in a climate-controlled tournament hall or a basement game room.</p>
-
-        <h2>Cloth Technology</h2>
-        <p>The cloth covering the playing surface has evolved from simple wool fabrics to sophisticated blends that incorporate synthetic fibers for enhanced durability and consistent ball roll. Premium tournament cloths now feature directional weaves that minimize ball drift and ensure predictable ball behavior.</p>
-
-        <h2>Precision Manufacturing</h2>
-        <p>Today's pool table manufacturing combines traditional craftsmanship with modern precision tools. Computer-controlled machinery ensures that every component meets exact specifications, while skilled craftsmen apply the finishing touches that give each table its unique character.</p>
-
-        <p>The result is a playing surface that not only looks beautiful but performs at the highest level, providing players with the consistent, predictable gameplay that serious billiards demands.</p>
-
-        <h2>The Future of Pool Tables</h2>
-        <p>As technology continues to advance, we can expect to see even more innovations in pool table design and manufacturing. From smart tables that can track ball movement to new materials that offer enhanced performance characteristics, the future of professional pool tables looks brighter than ever.</p>
-      `,
-      thumbnail: "/tables/table1.png",
-      authorName: "Wilson Moyi",
-      authorAvatar: "/thumb.png",
-      authorBio:
-        "Master craftsman and founder of Moyi Billiards, with over 15 years of experience in premium pool table manufacturing.",
-      publishedDate: "2024-01-15",
-      readingTime: 8,
-      views: 1247,
-      tags: ["Pool Tables", "Craftsmanship", "Technology", "Professional"],
-      category: "Industry Insights",
-    },
-  };
-
-  return articles[id as keyof typeof articles] || null;
-};
-
-const relatedArticles = [
-  {
-    id: "2",
-    title: "Choosing the Right Pool Table for Your Space",
-    thumbnail: "/tables/table2.webp",
-    readingTime: 5,
-  },
-  {
-    id: "3",
-    title: "Maintenance Tips for Professional Pool Tables",
-    thumbnail: "/tables/table3.png",
-    readingTime: 6,
-  },
-  {
-    id: "4",
-    title: "The Art of Pool Table Installation",
-    thumbnail: "/tables/table4.jpeg",
-    readingTime: 7,
-  },
-];
+interface RelatedPost {
+  id: string;
+  title: string;
+  slug: string;
+  excerpt: string | null;
+  featuredImage: string | null;
+  readTime: number | null;
+  publishedAt: string;
+  category: string;
+}
 
 interface PageProps {
   params: Promise<{ id: string }>;
@@ -102,13 +67,10 @@ interface PageProps {
 export default function ArticlePage({ params }: PageProps) {
   const [readingProgress, setReadingProgress] = useState(0);
   const [isSharing, setIsSharing] = useState(false);
-
-  // In a real app, you'd await the params and fetch data
-  const article = getArticleById("1wsasd"); // Using default ID for demo
-
-  if (!article) {
-    notFound();
-  }
+  const [article, setArticle] = useState<BlogPost | null>(null);
+  const [relatedArticles, setRelatedArticles] = useState<RelatedPost[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [articleId, setArticleId] = useState<string>("");
 
   useEffect(() => {
     const handleScroll = () => {
@@ -122,6 +84,64 @@ export default function ArticlePage({ params }: PageProps) {
     window.addEventListener("scroll", handleScroll);
     return () => window.removeEventListener("scroll", handleScroll);
   }, []);
+
+  useEffect(() => {
+    const getParams = async () => {
+      const resolvedParams = await params;
+      setArticleId(resolvedParams.id);
+    };
+    getParams();
+  }, [params]);
+
+  useEffect(() => {
+    if (!articleId) return;
+
+    const fetchArticle = async () => {
+      try {
+        const [articleResponse, relatedResponse] = await Promise.all([
+          fetch(`/api/public/blog/${articleId}`),
+          fetch(`/api/public/blog/related/${articleId}`),
+        ]);
+
+        if (articleResponse.ok) {
+          const articleData = await articleResponse.json();
+          setArticle(articleData.blogPost);
+        } else if (articleResponse.status === 404) {
+          notFound();
+        }
+
+        if (relatedResponse.ok) {
+          const relatedData = await relatedResponse.json();
+          setRelatedArticles(relatedData.relatedPosts);
+        }
+      } catch (error) {
+        console.error("Error fetching article:", error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchArticle();
+  }, [articleId]);
+
+  if (loading) {
+    return (
+      <>
+        <Header />
+        <div className="min-h-screen bg-background pt-[130px] pb-12 flex items-center justify-center">
+          <div className="text-center">
+            <Loader2 className="h-8 w-8 animate-spin mx-auto mb-4" />
+            <p className="text-muted-foreground">Loading article...</p>
+          </div>
+        </div>
+        <Footer />
+      </>
+    );
+  }
+
+  if (!article) {
+    notFound();
+  }
 
   const handleShare = async (platform: string) => {
     const url = window.location.href;
@@ -217,7 +237,7 @@ export default function ArticlePage({ params }: PageProps) {
                 </h1>
 
                 <p className="text-xl text-muted-foreground leading-relaxed">
-                  {article.description}
+                  {article.excerpt || article.metaDescription || ""}
                 </p>
               </div>
 
@@ -225,17 +245,15 @@ export default function ArticlePage({ params }: PageProps) {
               <div className="flex flex-wrap items-center gap-6 py-4 border-y border-border">
                 <div className="flex items-center gap-3">
                   <div className="relative">
-                    <Image
-                      src={article.authorAvatar}
-                      alt={article.authorName}
-                      width={48}
-                      height={48}
-                      className="rounded-full"
-                    />
+                    <div className="w-12 h-12 bg-rose-100 dark:bg-rose-900 rounded-full flex items-center justify-center">
+                      <span className="text-rose-600 font-semibold text-lg">
+                        {article.author.charAt(0).toUpperCase()}
+                      </span>
+                    </div>
                   </div>
                   <div>
                     <p className="font-medium text-foreground">
-                      {article.authorName}
+                      {article.author}
                     </p>
                     <p className="text-sm text-muted-foreground">Author</p>
                   </div>
@@ -247,17 +265,17 @@ export default function ArticlePage({ params }: PageProps) {
                   <div className="flex items-center gap-1">
                     <Calendar className="h-4 w-4" />
                     <span>
-                      {new Date(article.publishedDate).toLocaleDateString()}
+                      {new Date(
+                        article.publishedAt || article.createdAt
+                      ).toLocaleDateString()}
                     </span>
                   </div>
-                  <div className="flex items-center gap-1">
-                    <Clock className="h-4 w-4" />
-                    <span>{article.readingTime} min read</span>
-                  </div>
-                  <div className="flex items-center gap-1">
-                    <Eye className="h-4 w-4" />
-                    <span>{article.views.toLocaleString()} views</span>
-                  </div>
+                  {article.readTime && (
+                    <div className="flex items-center gap-1">
+                      <Clock className="h-4 w-4" />
+                      <span>{article.readTime} min read</span>
+                    </div>
+                  )}
                 </div>
               </div>
 
@@ -272,15 +290,17 @@ export default function ArticlePage({ params }: PageProps) {
             </header>
 
             {/* Featured Image */}
-            <div className="relative aspect-video overflow-hidden rounded-xl">
-              <Image
-                src={article.thumbnail}
-                alt={article.title}
-                fill
-                className="object-cover"
-                priority
-              />
-            </div>
+            {article.featuredImage && (
+              <div className="relative aspect-video overflow-hidden rounded-xl">
+                <Image
+                  src={article.featuredImage}
+                  alt={article.title}
+                  fill
+                  className="object-cover"
+                  priority
+                />
+              </div>
+            )}
 
             {/* Article Content */}
             <div className="prose prose-lg dark:prose-invert max-w-none">
@@ -294,18 +314,20 @@ export default function ArticlePage({ params }: PageProps) {
             <Card className="bg-muted/50">
               <CardContent className="p-6">
                 <div className="flex items-start gap-4">
-                  <Image
-                    src={article.authorAvatar}
-                    alt={article.authorName}
-                    width={64}
-                    height={64}
-                    className="rounded-full"
-                  />
+                  <div className="w-16 h-16 bg-rose-100 dark:bg-rose-900 rounded-full flex items-center justify-center">
+                    <span className="text-rose-600 font-semibold text-2xl">
+                      {article.author.charAt(0).toUpperCase()}
+                    </span>
+                  </div>
                   <div className="flex-1">
                     <h3 className="font-semibold text-lg mb-2">
-                      About {article.authorName}
+                      About {article.author}
                     </h3>
-                    <p className="text-muted-foreground">{article.authorBio}</p>
+                    <p className="text-muted-foreground">
+                      Content creator and billiards expert at Moyi Billiards,
+                      sharing insights about pool tables and the billiards
+                      industry.
+                    </p>
                   </div>
                 </div>
               </CardContent>
@@ -365,31 +387,44 @@ export default function ArticlePage({ params }: PageProps) {
           >
             <h2 className="text-2xl font-bold mb-8">Related Articles</h2>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-              {relatedArticles.map((relatedArticle, index) => (
-                <Card
-                  key={index}
-                  className="group hover:shadow-lg transition-shadow"
+              {relatedArticles.map((relatedArticle) => (
+                <Link
+                  key={relatedArticle.id}
+                  href={`/news/read/${relatedArticle.id}`}
                 >
-                  <CardContent className="p-0">
-                    <div className="relative aspect-video overflow-hidden rounded-t-lg">
-                      <Image
-                        src={relatedArticle.thumbnail}
-                        alt={relatedArticle.title}
-                        fill
-                        className="object-cover group-hover:scale-105 transition-transform duration-300"
-                      />
-                    </div>
-                    <div className="p-4">
-                      <h3 className="font-semibold mb-2 group-hover:text-rose-600 transition-colors">
-                        {relatedArticle.title}
-                      </h3>
-                      <div className="flex items-center gap-1 text-sm text-muted-foreground">
-                        <Clock className="h-3 w-3" />
-                        <span>{relatedArticle.readingTime} min read</span>
+                  <Card className="group hover:shadow-lg transition-shadow cursor-pointer">
+                    <CardContent className="p-0">
+                      {relatedArticle.featuredImage ? (
+                        <div className="relative aspect-video overflow-hidden rounded-t-lg">
+                          <Image
+                            src={relatedArticle.featuredImage}
+                            alt={relatedArticle.title}
+                            fill
+                            className="object-cover group-hover:scale-105 transition-transform duration-300"
+                          />
+                        </div>
+                      ) : (
+                        <div className="aspect-video bg-muted rounded-t-lg flex items-center justify-center">
+                          <Tag className="h-8 w-8 text-muted-foreground" />
+                        </div>
+                      )}
+                      <div className="p-4">
+                        <h3 className="font-semibold mb-2 group-hover:text-rose-600 transition-colors line-clamp-2">
+                          {relatedArticle.title}
+                        </h3>
+                        {relatedArticle.excerpt && (
+                          <p className="text-sm text-muted-foreground mb-2 line-clamp-2">
+                            {relatedArticle.excerpt}
+                          </p>
+                        )}
+                        <div className="flex items-center gap-1 text-sm text-muted-foreground">
+                          <Clock className="h-3 w-3" />
+                          <span>{relatedArticle.readTime || 5} min read</span>
+                        </div>
                       </div>
-                    </div>
-                  </CardContent>
-                </Card>
+                    </CardContent>
+                  </Card>
+                </Link>
               ))}
             </div>
           </motion.section>
