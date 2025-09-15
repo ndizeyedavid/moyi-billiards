@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useTransition } from "react";
 import { motion } from "framer-motion";
 import {
   X,
@@ -12,6 +12,9 @@ import {
   Phone,
   Calendar,
 } from "lucide-react";
+import { createContactReply } from "@/lib/actions/contacts";
+import { ContactReplyInput } from "@/lib/validations";
+import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -28,30 +31,21 @@ import {
 } from "@/components/ui/select";
 
 interface Contact {
-  id: number;
+  id: string;
   name: string;
   email: string;
-  phone: string;
+  phone?: string;
   subject: string;
   message: string;
-  date: string;
-  time: string;
+  createdAt: Date;
   status: string;
   priority: string;
   category: string;
 }
 
-interface ContactReply {
-  subject: string;
-  message: string;
-  template: string;
-  cc: string;
-  bcc: string;
-  priority: string;
+interface ContactReply extends ContactReplyInput {
+  template?: string;
   sendCopy: boolean;
-  scheduleSend: boolean;
-  scheduleDate: string;
-  scheduleTime: string;
 }
 
 interface ContactReplyFormProps {
@@ -192,8 +186,9 @@ export default function ContactReplyForm({
   onClose,
   onSend,
 }: ContactReplyFormProps) {
+  const [isPending, startTransition] = useTransition();
   const [formData, setFormData] = useState<ContactReply>({
-    subject: `Re: mellow`,
+    subject: `Re: ${contact.subject}`,
     message: "",
     template: "custom",
     cc: "",
@@ -201,8 +196,9 @@ export default function ContactReplyForm({
     priority: "Normal",
     sendCopy: true,
     scheduleSend: false,
-    scheduleDate: "",
+    scheduleDate: new Date(),
     scheduleTime: "",
+    contactId: contact.id,
   });
 
   const [errors, setErrors] = useState<Record<string, string>>({});
@@ -253,12 +249,34 @@ export default function ContactReplyForm({
     return Object.keys(newErrors).length === 0;
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (validateForm()) {
-      onSend(formData);
-      onClose();
-    }
+    if (!validateForm()) return;
+
+    startTransition(async () => {
+      try {
+        const replyData = {
+          subject: formData.subject,
+          message: formData.message,
+          cc: formData.cc || undefined,
+          bcc: formData.bcc || undefined,
+          priority: formData.priority as "High" | "Urgent" | "Normal" | "Low",
+          scheduleSend: formData.scheduleSend,
+          scheduleDate: formData.scheduleSend ? formData.scheduleDate : undefined,
+          scheduleTime: formData.scheduleSend ? formData.scheduleTime : undefined,
+          sendCopy: formData.sendCopy || false,
+          contactId: contact.id,
+        };
+
+        await createContactReply(replyData);
+        toast.success("Reply sent successfully!");
+        onSend(formData);
+        onClose();
+      } catch (error) {
+        toast.error("Failed to send reply. Please try again.");
+        console.error("Error sending reply:", error);
+      }
+    });
   };
 
   const handleSaveDraft = () => {
@@ -437,9 +455,9 @@ export default function ContactReplyForm({
                           <Input
                             id="scheduleDate"
                             type="date"
-                            value={formData.scheduleDate}
+                            value={formData.scheduleDate ? new Date(formData.scheduleDate).toISOString().split('T')[0] : ""}
                             onChange={(e) =>
-                              handleInputChange("scheduleDate", e.target.value)
+                              handleInputChange("scheduleDate", new Date(e.target.value))
                             }
                             className={
                               errors.scheduleDate ? "border-red-500" : ""
@@ -502,7 +520,7 @@ export default function ContactReplyForm({
                       <div className="flex items-center gap-2">
                         <Calendar className="h-4 w-4 text-muted-foreground" />
                         <span className="text-sm">
-                          {contact.date} at {contact.time}
+                          {new Date(contact.createdAt).toLocaleDateString()} at {new Date(contact.createdAt).toLocaleTimeString()}
                         </span>
                       </div>
                     </div>
@@ -581,7 +599,7 @@ export default function ContactReplyForm({
                 )}
                 {formData.scheduleSend && (
                   <Badge variant="outline">
-                    Scheduled: {formData.scheduleDate} {formData.scheduleTime}
+                    Scheduled: {formData.scheduleDate ? new Date(formData.scheduleDate).toLocaleDateString() : ""} {formData.scheduleTime}
                   </Badge>
                 )}
               </div>

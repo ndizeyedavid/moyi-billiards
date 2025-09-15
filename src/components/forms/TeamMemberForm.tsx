@@ -1,9 +1,13 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useTransition } from "react";
 import { motion } from "framer-motion";
 import { X, Upload, Save, Eye, User, Shield } from "lucide-react";
+import { createTeamMember, updateTeamMember } from "@/lib/actions/team-members";
+import { TeamMemberInput } from "@/lib/validations";
+import { toast } from "sonner";
 import Image from "next/image";
+import { ImageUpload } from "@/components/ui/image-upload";
 
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -20,24 +24,11 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 
-interface TeamMember {
-  id?: number;
-  name: string;
-  email: string;
-  phone: string;
-  role: string;
-  department: string;
-  location: string;
-  joinDate: string;
-  status: string;
-  avatar: string;
-  permissions: string[];
-  experience: string;
-  bio?: string;
-  skills?: string[];
-  salary?: number;
-  emergencyContact?: string;
-  emergencyPhone?: string;
+interface TeamMember extends TeamMemberInput {
+  id?: string;
+  startDate: Date;
+  emergencyContact?: Record<string, any>;
+  address?: string;
 }
 
 interface TeamMemberFormProps {
@@ -61,26 +52,24 @@ const permissionOptions = [
 ];
 
 export default function TeamMemberForm({ member, isOpen, onClose, onSave }: TeamMemberFormProps) {
+  const [isPending, startTransition] = useTransition();
   const [formData, setFormData] = useState<TeamMember>({
-    name: member?.name || "",
+    firstName: member?.firstName || "",
+    lastName: member?.lastName || "",
     email: member?.email || "",
     phone: member?.phone || "",
     role: member?.role || "",
     department: member?.department || "",
-    location: member?.location || "Kigali, Rwanda",
-    joinDate: member?.joinDate || new Date().toISOString().split('T')[0],
+    startDate: member?.startDate || new Date(),
     status: member?.status || "Active",
     avatar: member?.avatar || "",
-    permissions: member?.permissions || [],
-    experience: member?.experience || "",
-    bio: member?.bio || "",
+    permissions: member?.permissions || {},
     skills: member?.skills || [],
     salary: member?.salary || 0,
-    emergencyContact: member?.emergencyContact || "",
-    emergencyPhone: member?.emergencyPhone || "",
+    emergencyContact: member?.emergencyContact || {},
+    address: member?.address || "",
   });
 
-  const [avatarPreview, setAvatarPreview] = useState(member?.avatar || "");
   const [skillInput, setSkillInput] = useState("");
   const [errors, setErrors] = useState<Record<string, string>>({});
 
@@ -93,26 +82,20 @@ export default function TeamMemberForm({ member, isOpen, onClose, onSave }: Team
     }
   };
 
-  const handleAvatarUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0];
-    if (file) {
-      const reader = new FileReader();
-      reader.onload = (e) => {
-        const result = e.target?.result as string;
-        setAvatarPreview(result);
-        handleInputChange("avatar", result);
-      };
-      reader.readAsDataURL(file);
-    }
+  const handleAvatarUpload = (url: string) => {
+    handleInputChange("avatar", url);
+  };
+
+  const handleAvatarRemove = () => {
+    handleInputChange("avatar", "");
   };
 
   const togglePermission = (permission: string) => {
-    const currentPermissions = formData.permissions;
-    if (currentPermissions.includes(permission)) {
-      handleInputChange("permissions", currentPermissions.filter(p => p !== permission));
-    } else {
-      handleInputChange("permissions", [...currentPermissions, permission]);
-    }
+    const currentPermissions = formData.permissions as Record<string, boolean> || {};
+    handleInputChange("permissions", {
+      ...currentPermissions,
+      [permission]: !currentPermissions[permission]
+    });
   };
 
   const addSkill = () => {
@@ -129,24 +112,37 @@ export default function TeamMemberForm({ member, isOpen, onClose, onSave }: Team
   const validateForm = () => {
     const newErrors: Record<string, string> = {};
 
-    if (!formData.name.trim()) newErrors.name = "Name is required";
+    if (!formData.firstName?.trim()) newErrors.firstName = "First name is required";
+    if (!formData.lastName?.trim()) newErrors.lastName = "Last name is required";
     if (!formData.email.trim()) newErrors.email = "Email is required";
     if (!/\S+@\S+\.\S+/.test(formData.email)) newErrors.email = "Invalid email format";
-    if (!formData.phone.trim()) newErrors.phone = "Phone number is required";
     if (!formData.role.trim()) newErrors.role = "Role is required";
     if (!formData.department.trim()) newErrors.department = "Department is required";
-    if (!formData.experience.trim()) newErrors.experience = "Experience is required";
 
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (validateForm()) {
-      onSave({ ...formData, id: member?.id });
-      onClose();
-    }
+    if (!validateForm()) return;
+
+    startTransition(async () => {
+      try {
+        if (member?.id) {
+          await updateTeamMember(member.id, formData);
+          toast.success("Team member updated successfully!");
+        } else {
+          await createTeamMember(formData);
+          toast.success("Team member created successfully!");
+        }
+        onSave({ ...formData, id: member?.id });
+        onClose();
+      } catch (error) {
+        toast.error("Failed to save team member. Please try again.");
+        console.error("Error saving team member:", error);
+      }
+    });
   };
 
   if (!isOpen) return null;
@@ -180,15 +176,27 @@ export default function TeamMemberForm({ member, isOpen, onClose, onSave }: Team
                   <CardContent className="space-y-4">
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                       <div className="space-y-2">
-                        <Label htmlFor="name">Full Name *</Label>
+                        <Label htmlFor="firstName">First Name *</Label>
                         <Input
-                          id="name"
-                          value={formData.name}
-                          onChange={(e) => handleInputChange("name", e.target.value)}
-                          placeholder="Enter full name"
-                          className={errors.name ? "border-red-500" : ""}
+                          id="firstName"
+                          value={formData.firstName}
+                          onChange={(e) => handleInputChange("firstName", e.target.value)}
+                          placeholder="Enter first name"
+                          className={errors.firstName ? "border-red-500" : ""}
                         />
-                        {errors.name && <p className="text-sm text-red-500">{errors.name}</p>}
+                        {errors.firstName && <p className="text-sm text-red-500">{errors.firstName}</p>}
+                      </div>
+
+                      <div className="space-y-2">
+                        <Label htmlFor="lastName">Last Name *</Label>
+                        <Input
+                          id="lastName"
+                          value={formData.lastName}
+                          onChange={(e) => handleInputChange("lastName", e.target.value)}
+                          placeholder="Enter last name"
+                          className={errors.lastName ? "border-red-500" : ""}
+                        />
+                        {errors.lastName && <p className="text-sm text-red-500">{errors.lastName}</p>}
                       </div>
 
                       <div className="space-y-2">
@@ -217,52 +225,36 @@ export default function TeamMemberForm({ member, isOpen, onClose, onSave }: Team
                       </div>
 
                       <div className="space-y-2">
-                        <Label htmlFor="location">Location</Label>
-                        <Select value={formData.location} onValueChange={(value) => handleInputChange("location", value)}>
-                          <SelectTrigger>
-                            <SelectValue placeholder="Select location" />
-                          </SelectTrigger>
-                          <SelectContent>
-                            {locations.map((location) => (
-                              <SelectItem key={location} value={location}>
-                                {location}
-                              </SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
+                        <Label htmlFor="address">Address</Label>
+                        <Input
+                          id="address"
+                          value={formData.address || ""}
+                          onChange={(e) => handleInputChange("address", e.target.value)}
+                          placeholder="Enter address"
+                        />
                       </div>
 
                       <div className="space-y-2">
-                        <Label htmlFor="emergencyContact">Emergency Contact</Label>
+                        <Label htmlFor="emergencyContactName">Emergency Contact Name</Label>
                         <Input
-                          id="emergencyContact"
-                          value={formData.emergencyContact}
-                          onChange={(e) => handleInputChange("emergencyContact", e.target.value)}
+                          id="emergencyContactName"
+                          value={(formData.emergencyContact as any)?.name || ""}
+                          onChange={(e) => handleInputChange("emergencyContact", { ...formData.emergencyContact, name: e.target.value })}
                           placeholder="Emergency contact name"
                         />
                       </div>
 
                       <div className="space-y-2">
-                        <Label htmlFor="emergencyPhone">Emergency Phone</Label>
+                        <Label htmlFor="emergencyContactPhone">Emergency Contact Phone</Label>
                         <Input
-                          id="emergencyPhone"
-                          value={formData.emergencyPhone}
-                          onChange={(e) => handleInputChange("emergencyPhone", e.target.value)}
+                          id="emergencyContactPhone"
+                          value={(formData.emergencyContact as any)?.phone || ""}
+                          onChange={(e) => handleInputChange("emergencyContact", { ...formData.emergencyContact, phone: e.target.value })}
                           placeholder="+250 788 123 456"
                         />
                       </div>
                     </div>
 
-                    <div className="space-y-2">
-                      <Label htmlFor="bio">Bio</Label>
-                      <Textarea
-                        id="bio"
-                        value={formData.bio}
-                        onChange={(e) => handleInputChange("bio", e.target.value)}
-                        placeholder="Brief bio or description"
-                        rows={3}
-                      />
-                    </div>
                   </CardContent>
                 </Card>
 
@@ -307,25 +299,13 @@ export default function TeamMemberForm({ member, isOpen, onClose, onSave }: Team
                       </div>
 
                       <div className="space-y-2">
-                        <Label htmlFor="joinDate">Join Date</Label>
+                        <Label htmlFor="startDate">Start Date</Label>
                         <Input
-                          id="joinDate"
+                          id="startDate"
                           type="date"
-                          value={formData.joinDate}
-                          onChange={(e) => handleInputChange("joinDate", e.target.value)}
+                          value={formData.startDate ? new Date(formData.startDate).toISOString().split('T')[0] : ""}
+                          onChange={(e) => handleInputChange("startDate", new Date(e.target.value))}
                         />
-                      </div>
-
-                      <div className="space-y-2">
-                        <Label htmlFor="experience">Experience *</Label>
-                        <Input
-                          id="experience"
-                          value={formData.experience}
-                          onChange={(e) => handleInputChange("experience", e.target.value)}
-                          placeholder="e.g., 5 years"
-                          className={errors.experience ? "border-red-500" : ""}
-                        />
-                        {errors.experience && <p className="text-sm text-red-500">{errors.experience}</p>}
                       </div>
 
                       <div className="space-y-2">
@@ -392,7 +372,7 @@ export default function TeamMemberForm({ member, isOpen, onClose, onSave }: Team
                           <div key={permission} className="flex items-center space-x-2">
                             <Switch
                               id={permission}
-                              checked={formData.permissions.includes(permission)}
+                              checked={(formData.permissions as any)?.[permission] || false}
                               onCheckedChange={() => togglePermission(permission)}
                             />
                             <Label htmlFor={permission} className="text-sm">
@@ -413,45 +393,16 @@ export default function TeamMemberForm({ member, isOpen, onClose, onSave }: Team
                     <CardTitle>Profile Picture</CardTitle>
                   </CardHeader>
                   <CardContent>
-                    <div className="space-y-4">
-                      <div className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center">
-                        {avatarPreview ? (
-                          <div className="relative">
-                            <Image
-                              src={avatarPreview}
-                              alt="Avatar preview"
-                              width={120}
-                              height={120}
-                              className="mx-auto rounded-full object-cover"
-                            />
-                            <Button
-                              type="button"
-                              variant="outline"
-                              size="sm"
-                              className="mt-2"
-                              onClick={() => {
-                                setAvatarPreview("");
-                                handleInputChange("avatar", "");
-                              }}
-                            >
-                              Remove
-                            </Button>
-                          </div>
-                        ) : (
-                          <div>
-                            <User className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-                            <p className="text-gray-600 mb-2">Upload profile picture</p>
-                            <p className="text-sm text-gray-400">PNG, JPG up to 5MB</p>
-                          </div>
-                        )}
-                      </div>
-                      <input
-                        type="file"
-                        accept="image/*"
-                        onChange={handleAvatarUpload}
-                        className="w-full text-sm"
-                      />
-                    </div>
+                    <ImageUpload
+                      value={formData.avatar || ""}
+                      onChange={handleAvatarUpload}
+                      onRemove={handleAvatarRemove}
+                      folder="team"
+                      placeholder="Upload profile picture"
+                      aspectRatio="square"
+                      width={120}
+                      height={120}
+                    />
                   </CardContent>
                 </Card>
 
@@ -462,7 +413,7 @@ export default function TeamMemberForm({ member, isOpen, onClose, onSave }: Team
                   <CardContent className="space-y-3">
                     <div className="flex justify-between">
                       <span className="text-sm text-muted-foreground">Name:</span>
-                      <span className="text-sm font-medium">{formData.name || "Not set"}</span>
+                      <span className="text-sm font-medium">{`${formData.firstName} ${formData.lastName}` || "Not set"}</span>
                     </div>
                     <div className="flex justify-between">
                       <span className="text-sm text-muted-foreground">Role:</span>
@@ -473,12 +424,8 @@ export default function TeamMemberForm({ member, isOpen, onClose, onSave }: Team
                       <span className="text-sm font-medium">{formData.department || "Not set"}</span>
                     </div>
                     <div className="flex justify-between">
-                      <span className="text-sm text-muted-foreground">Experience:</span>
-                      <span className="text-sm font-medium">{formData.experience || "Not set"}</span>
-                    </div>
-                    <div className="flex justify-between">
                       <span className="text-sm text-muted-foreground">Permissions:</span>
-                      <span className="text-sm font-medium">{formData.permissions.length}</span>
+                      <span className="text-sm font-medium">{Object.keys(formData.permissions || {}).length}</span>
                     </div>
                     <div className="flex justify-between">
                       <span className="text-sm text-muted-foreground">Status:</span>
@@ -497,7 +444,7 @@ export default function TeamMemberForm({ member, isOpen, onClose, onSave }: Team
                 <Badge variant={formData.status === "Active" ? "default" : "secondary"}>
                   {formData.status}
                 </Badge>
-                {formData.permissions.includes("Admin") && (
+                {(formData.permissions as any)?.Admin && (
                   <Badge variant="outline" className="gap-1">
                     <Shield className="h-3 w-3" />
                     Admin
