@@ -1,9 +1,13 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useTransition } from "react";
 import { motion } from "framer-motion";
-import { X, Upload, Save, Eye } from "lucide-react";
+import { X, Save, Upload, Plus, Minus, Eye } from "lucide-react";
+import { createProduct, updateProduct } from "@/lib/actions/products";
+import { ProductInput } from "@/lib/validations";
+import { toast } from "sonner";
 import Image from "next/image";
+import { ImageUpload } from "@/components/ui/image-upload";
 
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -20,22 +24,8 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 
-interface Product {
-  id?: number;
-  name: string;
-  description: string;
-  price: number;
-  currency: string;
-  category: string;
-  status: string;
-  stock: number;
-  image: string;
-  featured: boolean;
-  specifications?: string;
-  dimensions?: string;
-  weight?: string;
-  material?: string;
-  warranty?: string;
+interface Product extends ProductInput {
+  id?: string;
 }
 
 interface ProductFormProps {
@@ -49,67 +39,97 @@ const categories = ["Professional", "Standard", "Premium", "Compact"];
 const statuses = ["Active", "Draft", "Out of Stock"];
 const currencies = ["RWF", "USD", "EUR"];
 
-export default function ProductForm({ product, isOpen, onClose, onSave }: ProductFormProps) {
+export default function ProductForm({
+  product,
+  isOpen,
+  onClose,
+  onSave,
+}: ProductFormProps) {
+  const [isPending, startTransition] = useTransition();
   const [formData, setFormData] = useState<Product>({
     name: product?.name || "",
     description: product?.description || "",
     price: product?.price || 0,
     currency: product?.currency || "RWF",
-    category: product?.category || "Standard",
-    status: product?.status || "Draft",
-    stock: product?.stock || 0,
-    image: product?.image || "",
+    category: product?.category || "",
+    status: product?.status || "Active",
     featured: product?.featured || false,
-    specifications: product?.specifications || "",
-    dimensions: product?.dimensions || "",
-    weight: product?.weight || "",
-    material: product?.material || "",
-    warranty: product?.warranty || "1 year",
+    stock: product?.stock || 0,
+    sku: product?.sku || "",
+    specifications: product?.specifications || {},
+    images: product?.images || [],
+    slug: product?.slug || "",
+    metaTitle: product?.metaTitle || "",
+    metaDescription: product?.metaDescription || "",
   });
-
-  const [imagePreview, setImagePreview] = useState(product?.image || "");
   const [errors, setErrors] = useState<Record<string, string>>({});
-
   const handleInputChange = (field: keyof Product, value: any) => {
-    setFormData(prev => ({ ...prev, [field]: value }));
+    setFormData((prev) => ({ ...prev, [field]: value }));
     // Clear error when user starts typing
     if (errors[field]) {
-      setErrors(prev => ({ ...prev, [field]: "" }));
+      setErrors((prev) => ({ ...prev, [field]: "" }));
     }
   };
 
-  const handleImageUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0];
-    if (file) {
-      const reader = new FileReader();
-      reader.onload = (e) => {
-        const result = e.target?.result as string;
-        setImagePreview(result);
-        handleInputChange("image", result);
-      };
-      reader.readAsDataURL(file);
-    }
+  const handleImageUpload = (url: string) => {
+    handleInputChange("images", [url]);
+    // Toast is already shown by ImageUpload component
+  };
+
+  const handleImageRemove = () => {
+    handleInputChange("images", []);
   };
 
   const validateForm = () => {
     const newErrors: Record<string, string> = {};
 
     if (!formData.name.trim()) newErrors.name = "Product name is required";
-    if (!formData.description.trim()) newErrors.description = "Description is required";
+    if (!formData.description?.trim())
+      newErrors.description = "Description is required";
     if (formData.price <= 0) newErrors.price = "Price must be greater than 0";
     if (formData.stock < 0) newErrors.stock = "Stock cannot be negative";
-    if (!formData.image) newErrors.image = "Product image is required";
+    if (!formData.images || formData.images.length === 0)
+      newErrors.images = "Product image is required";
 
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (validateForm()) {
-      onSave({ ...formData, id: product?.id });
-      onClose();
-    }
+    if (!validateForm()) return;
+
+    startTransition(async () => {
+      try {
+        console.log("saving.....");
+        let result;
+        if (product?.id) {
+          result = await updateProduct(product.id, formData);
+        } else {
+          result = await createProduct(formData);
+          console.log(result);
+        }
+
+        if (result.success) {
+          console.log("Product saved successfully:");
+          toast.success(
+            product?.id
+              ? "Product updated successfully!"
+              : "Product created successfully!"
+          );
+          onSave({ ...formData, id: product?.id || result.data?.id });
+          onClose();
+        } else {
+          toast.error(
+            result.error || "Failed to save product. Please try again."
+          );
+          console.error(result.error);
+        }
+      } catch (error) {
+        toast.error("An unexpected error occurred. Please try again.");
+        console.error("Error saving product:", error);
+      }
+    });
   };
 
   if (!isOpen) return null;
@@ -146,11 +166,15 @@ export default function ProductForm({ product, isOpen, onClose, onSave }: Produc
                       <Input
                         id="name"
                         value={formData.name}
-                        onChange={(e) => handleInputChange("name", e.target.value)}
+                        onChange={(e) =>
+                          handleInputChange("name", e.target.value)
+                        }
                         placeholder="Enter product name"
                         className={errors.name ? "border-red-500" : ""}
                       />
-                      {errors.name && <p className="text-sm text-red-500">{errors.name}</p>}
+                      {errors.name && (
+                        <p className="text-sm text-red-500">{errors.name}</p>
+                      )}
                     </div>
 
                     <div className="space-y-2">
@@ -158,18 +182,29 @@ export default function ProductForm({ product, isOpen, onClose, onSave }: Produc
                       <Textarea
                         id="description"
                         value={formData.description}
-                        onChange={(e) => handleInputChange("description", e.target.value)}
+                        onChange={(e) =>
+                          handleInputChange("description", e.target.value)
+                        }
                         placeholder="Enter product description"
                         rows={4}
                         className={errors.description ? "border-red-500" : ""}
                       />
-                      {errors.description && <p className="text-sm text-red-500">{errors.description}</p>}
+                      {errors.description && (
+                        <p className="text-sm text-red-500">
+                          {errors.description}
+                        </p>
+                      )}
                     </div>
 
                     <div className="grid grid-cols-2 gap-4">
                       <div className="space-y-2">
                         <Label htmlFor="category">Category</Label>
-                        <Select value={formData.category} onValueChange={(value) => handleInputChange("category", value)}>
+                        <Select
+                          value={formData.category}
+                          onValueChange={(value) =>
+                            handleInputChange("category", value)
+                          }
+                        >
                           <SelectTrigger>
                             <SelectValue placeholder="Select category" />
                           </SelectTrigger>
@@ -185,7 +220,12 @@ export default function ProductForm({ product, isOpen, onClose, onSave }: Produc
 
                       <div className="space-y-2">
                         <Label htmlFor="status">Status</Label>
-                        <Select value={formData.status} onValueChange={(value) => handleInputChange("status", value)}>
+                        <Select
+                          value={formData.status}
+                          onValueChange={(value) =>
+                            handleInputChange("status", value)
+                          }
+                        >
                           <SelectTrigger>
                             <SelectValue placeholder="Select status" />
                           </SelectTrigger>
@@ -207,16 +247,25 @@ export default function ProductForm({ product, isOpen, onClose, onSave }: Produc
                           id="price"
                           type="number"
                           value={formData.price}
-                          onChange={(e) => handleInputChange("price", Number(e.target.value))}
+                          onChange={(e) =>
+                            handleInputChange("price", Number(e.target.value))
+                          }
                           placeholder="0"
                           className={errors.price ? "border-red-500" : ""}
                         />
-                        {errors.price && <p className="text-sm text-red-500">{errors.price}</p>}
+                        {errors.price && (
+                          <p className="text-sm text-red-500">{errors.price}</p>
+                        )}
                       </div>
 
                       <div className="space-y-2">
                         <Label htmlFor="currency">Currency</Label>
-                        <Select value={formData.currency} onValueChange={(value) => handleInputChange("currency", value)}>
+                        <Select
+                          value={formData.currency}
+                          onValueChange={(value) =>
+                            handleInputChange("currency", value)
+                          }
+                        >
                           <SelectTrigger>
                             <SelectValue placeholder="Select currency" />
                           </SelectTrigger>
@@ -237,18 +286,24 @@ export default function ProductForm({ product, isOpen, onClose, onSave }: Produc
                         id="stock"
                         type="number"
                         value={formData.stock}
-                        onChange={(e) => handleInputChange("stock", Number(e.target.value))}
+                        onChange={(e) =>
+                          handleInputChange("stock", Number(e.target.value))
+                        }
                         placeholder="0"
                         className={errors.stock ? "border-red-500" : ""}
                       />
-                      {errors.stock && <p className="text-sm text-red-500">{errors.stock}</p>}
+                      {errors.stock && (
+                        <p className="text-sm text-red-500">{errors.stock}</p>
+                      )}
                     </div>
 
                     <div className="flex items-center space-x-2">
                       <Switch
                         id="featured"
                         checked={formData.featured}
-                        onCheckedChange={(checked) => handleInputChange("featured", checked)}
+                        onCheckedChange={(checked) =>
+                          handleInputChange("featured", checked)
+                        }
                       />
                       <Label htmlFor="featured">Featured Product</Label>
                     </div>
@@ -263,46 +318,19 @@ export default function ProductForm({ product, isOpen, onClose, onSave }: Produc
                     <CardTitle>Product Image *</CardTitle>
                   </CardHeader>
                   <CardContent>
-                    <div className="space-y-4">
-                      <div className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center">
-                        {imagePreview ? (
-                          <div className="relative">
-                            <Image
-                              src={imagePreview}
-                              alt="Product preview"
-                              width={300}
-                              height={200}
-                              className="mx-auto rounded-lg object-cover"
-                            />
-                            <Button
-                              type="button"
-                              variant="outline"
-                              size="sm"
-                              className="mt-2"
-                              onClick={() => {
-                                setImagePreview("");
-                                handleInputChange("image", "");
-                              }}
-                            >
-                              Remove Image
-                            </Button>
-                          </div>
-                        ) : (
-                          <div>
-                            <Upload className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-                            <p className="text-gray-600 mb-2">Upload product image</p>
-                            <p className="text-sm text-gray-400">PNG, JPG, WEBP up to 10MB</p>
-                          </div>
-                        )}
-                      </div>
-                      <input
-                        type="file"
-                        accept="image/*"
-                        onChange={handleImageUpload}
-                        className="w-full"
-                      />
-                      {errors.image && <p className="text-sm text-red-500">{errors.image}</p>}
-                    </div>
+                    <ImageUpload
+                      value={formData.images?.[0] || ""}
+                      onChange={handleImageUpload}
+                      onRemove={handleImageRemove}
+                      folder="products"
+                      placeholder="Upload product image"
+                      aspectRatio="video"
+                    />
+                    {errors.images && (
+                      <p className="text-sm text-red-500 mt-2">
+                        {errors.images}
+                      </p>
+                    )}
                   </CardContent>
                 </Card>
 
@@ -315,8 +343,15 @@ export default function ProductForm({ product, isOpen, onClose, onSave }: Produc
                       <Label htmlFor="dimensions">Dimensions</Label>
                       <Input
                         id="dimensions"
-                        value={formData.dimensions}
-                        onChange={(e) => handleInputChange("dimensions", e.target.value)}
+                        value={
+                          (formData.specifications as any)?.dimensions || ""
+                        }
+                        onChange={(e) =>
+                          handleInputChange("specifications", {
+                            ...formData.specifications,
+                            dimensions: e.target.value,
+                          })
+                        }
                         placeholder="e.g., 9ft x 4.5ft x 32in"
                       />
                     </div>
@@ -325,8 +360,13 @@ export default function ProductForm({ product, isOpen, onClose, onSave }: Produc
                       <Label htmlFor="weight">Weight</Label>
                       <Input
                         id="weight"
-                        value={formData.weight}
-                        onChange={(e) => handleInputChange("weight", e.target.value)}
+                        value={(formData.specifications as any)?.weight || ""}
+                        onChange={(e) =>
+                          handleInputChange("specifications", {
+                            ...formData.specifications,
+                            weight: e.target.value,
+                          })
+                        }
                         placeholder="e.g., 700 lbs"
                       />
                     </div>
@@ -335,8 +375,13 @@ export default function ProductForm({ product, isOpen, onClose, onSave }: Produc
                       <Label htmlFor="material">Material</Label>
                       <Input
                         id="material"
-                        value={formData.material}
-                        onChange={(e) => handleInputChange("material", e.target.value)}
+                        value={(formData.specifications as any)?.material || ""}
+                        onChange={(e) =>
+                          handleInputChange("specifications", {
+                            ...formData.specifications,
+                            material: e.target.value,
+                          })
+                        }
                         placeholder="e.g., Slate bed, Hardwood frame"
                       />
                     </div>
@@ -345,20 +390,26 @@ export default function ProductForm({ product, isOpen, onClose, onSave }: Produc
                       <Label htmlFor="warranty">Warranty</Label>
                       <Input
                         id="warranty"
-                        value={formData.warranty}
-                        onChange={(e) => handleInputChange("warranty", e.target.value)}
+                        value={(formData.specifications as any)?.warranty || ""}
+                        onChange={(e) =>
+                          handleInputChange("specifications", {
+                            ...formData.specifications,
+                            warranty: e.target.value,
+                          })
+                        }
                         placeholder="e.g., 1 year"
                       />
                     </div>
 
                     <div className="space-y-2">
-                      <Label htmlFor="specifications">Additional Specifications</Label>
-                      <Textarea
-                        id="specifications"
-                        value={formData.specifications}
-                        onChange={(e) => handleInputChange("specifications", e.target.value)}
-                        placeholder="Enter additional specifications..."
-                        rows={4}
+                      <Label htmlFor="sku">SKU</Label>
+                      <Input
+                        id="sku"
+                        value={formData.sku || ""}
+                        onChange={(e) =>
+                          handleInputChange("sku", e.target.value)
+                        }
+                        placeholder="Product SKU"
                       />
                     </div>
                   </CardContent>
@@ -372,22 +423,26 @@ export default function ProductForm({ product, isOpen, onClose, onSave }: Produc
                 {formData.featured && (
                   <Badge variant="outline">Featured Product</Badge>
                 )}
-                <Badge variant={formData.status === "Active" ? "default" : "secondary"}>
+                <Badge
+                  variant={
+                    formData.status === "Active" ? "default" : "secondary"
+                  }
+                >
                   {formData.status}
                 </Badge>
               </div>
-              
+
               <div className="flex items-center gap-2">
                 <Button type="button" variant="outline" onClick={onClose}>
                   Cancel
                 </Button>
-                <Button type="button" variant="outline" className="gap-2">
-                  <Eye className="h-4 w-4" />
-                  Preview
-                </Button>
-                <Button type="submit" className="gap-2">
+                <Button type="submit" className="gap-2" disabled={isPending}>
                   <Save className="h-4 w-4" />
-                  {product ? "Update Product" : "Save Product"}
+                  {isPending
+                    ? "Saving..."
+                    : product
+                    ? "Update Product"
+                    : "Save Product"}
                 </Button>
               </div>
             </div>

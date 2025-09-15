@@ -16,9 +16,12 @@ import {
   UserCheck,
   Crown,
   Star,
+  Loader2,
 } from "lucide-react";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Image from "next/image";
+import { getTeamMembers, deleteTeamMember } from "@/lib/actions/team-members";
+import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -34,143 +37,44 @@ import {
 } from "@/components/ui/dropdown-menu";
 import TeamMemberForm from "@/components/forms/TeamMemberForm";
 
-// Mock data for team members
-const teamMembers = [
-  {
-    id: 1,
-    name: "Wilson Moyi",
-    email: "wilson@moyibilliards.com",
-    phone: "+250 788 123 456",
-    role: "CEO & Founder",
-    department: "Leadership",
-    location: "Kigali, Rwanda",
-    joinDate: "2020-01-15",
-    status: "Active",
-    avatar: "/logo.png",
-    permissions: ["Admin", "All Access"],
-    lastActive: "2024-01-15 14:30",
-    projects: 12,
-    experience: "15+ years",
-  },
-  {
-    id: 2,
-    name: "Sarah Johnson",
-    email: "sarah@moyibilliards.com",
-    phone: "+250 788 987 654",
-    role: "Sales Manager",
-    department: "Sales",
-    location: "Kigali, Rwanda",
-    joinDate: "2021-03-20",
-    status: "Active",
-    avatar: "/logo.png",
-    permissions: ["Sales", "Customer Management"],
-    lastActive: "2024-01-15 12:15",
-    projects: 8,
-    experience: "8 years",
-  },
-  {
-    id: 3,
-    name: "Michael Brown",
-    email: "michael@moyibilliards.com",
-    phone: "+250 788 456 789",
-    role: "Production Manager",
-    department: "Manufacturing",
-    location: "Kigali, Rwanda",
-    joinDate: "2020-08-10",
-    status: "Active",
-    avatar: "/logo.png",
-    permissions: ["Production", "Quality Control"],
-    lastActive: "2024-01-15 16:45",
-    projects: 15,
-    experience: "12 years",
-  },
-  {
-    id: 4,
-    name: "Emma Wilson",
-    email: "emma@moyibilliards.com",
-    phone: "+250 788 321 987",
-    role: "Marketing Specialist",
-    department: "Marketing",
-    location: "Kigali, Rwanda",
-    joinDate: "2022-01-05",
-    status: "Active",
-    avatar: "/logo.png",
-    permissions: ["Marketing", "Content Management"],
-    lastActive: "2024-01-15 10:20",
-    projects: 6,
-    experience: "5 years",
-  },
-  {
-    id: 5,
-    name: "David Uwimana",
-    email: "david@moyibilliards.com",
-    phone: "+250 788 654 321",
-    role: "Installation Technician",
-    department: "Operations",
-    location: "Kigali, Rwanda",
-    joinDate: "2021-06-15",
-    status: "Active",
-    avatar: "/logo.png",
-    permissions: ["Installation", "Maintenance"],
-    lastActive: "2024-01-15 08:30",
-    projects: 10,
-    experience: "7 years",
-  },
-  {
-    id: 6,
-    name: "Grace Mukamana",
-    email: "grace@moyibilliards.com",
-    phone: "+250 788 789 123",
-    role: "Customer Service Rep",
-    department: "Support",
-    location: "Kigali, Rwanda",
-    joinDate: "2022-09-01",
-    status: "On Leave",
-    avatar: "/logo.png",
-    permissions: ["Customer Support"],
-    lastActive: "2024-01-10 17:00",
-    projects: 4,
-    experience: "3 years",
-  },
-];
+interface TeamMember {
+  id: string;
+  firstName: string;
+  lastName: string;
+  email: string;
+  phone: string | null;
+  role: string;
+  department: string;
+  startDate: Date;
+  status: string;
+  avatar?: string | null;
+  permissions: any; // JsonValue from Prisma
+  skills: string[];
+  salary?: number | null;
+  emergencyContact?: any | null; // JsonValue from Prisma
+  address?: string | null;
+  createdAt: Date;
+  updatedAt: Date;
+}
 
-const teamStats = [
-  {
-    title: "Total Members",
-    value: "12",
-    change: "+2 this quarter",
-    icon: Users,
-    color: "text-blue-600",
-    bgColor: "bg-blue-100 dark:bg-blue-900/20",
-  },
-  {
-    title: "Active Members",
-    value: "11",
-    change: "91% active rate",
-    icon: UserCheck,
-    color: "text-green-600",
-    bgColor: "bg-green-100 dark:bg-green-900/20",
-  },
-  {
-    title: "Departments",
-    value: "6",
-    change: "Well organized",
-    icon: Shield,
-    color: "text-orange-600",
-    bgColor: "bg-orange-100 dark:bg-orange-900/20",
-  },
-  {
-    title: "Avg. Experience",
-    value: "8.2 yrs",
-    change: "Highly experienced",
-    icon: Star,
-    color: "text-purple-600",
-    bgColor: "bg-purple-100 dark:bg-purple-900/20",
-  },
+const departments = [
+  "All",
+  "Leadership",
+  "Sales",
+  "Manufacturing",
+  "Marketing",
+  "Operations",
+  "Support",
 ];
-
-const departments = ["All", "Leadership", "Sales", "Manufacturing", "Marketing", "Operations", "Support"];
-const roles = ["All", "CEO & Founder", "Sales Manager", "Production Manager", "Marketing Specialist", "Installation Technician", "Customer Service Rep"];
+const roles = [
+  "All",
+  "CEO & Founder",
+  "Sales Manager",
+  "Production Manager",
+  "Marketing Specialist",
+  "Installation Technician",
+  "Customer Service Rep",
+];
 const statuses = ["All", "Active", "On Leave", "Inactive"];
 
 export default function TeamPage() {
@@ -178,19 +82,102 @@ export default function TeamPage() {
   const [filterDepartment, setFilterDepartment] = useState("All");
   const [filterRole, setFilterRole] = useState("All");
   const [isTeamMemberFormOpen, setIsTeamMemberFormOpen] = useState(false);
-  const [editingMember, setEditingMember] = useState<any>(null);
+  const [editingMember, setEditingMember] = useState<TeamMember | null>(null);
   const [selectedStatus, setSelectedStatus] = useState("All");
+  const [teamMembers, setTeamMembers] = useState<TeamMember[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  // Fetch team members on component mount
+  useEffect(() => {
+    fetchTeamMembers();
+  }, []);
+
+  const fetchTeamMembers = async () => {
+    try {
+      setLoading(true);
+      setError(null);
+      const result = await getTeamMembers();
+      if (result.success && result.data) {
+        // Transform the data to match our interface
+        const transformedMembers = result.data.teamMembers.map(
+          (member: any) => ({
+            ...member,
+            salary: member.salary ? Number(member.salary) : null,
+            permissions: member.permissions || {},
+            skills: member.skills || [],
+            emergencyContact: member.emergencyContact || {},
+          })
+        );
+        setTeamMembers(transformedMembers);
+      } else {
+        setError(result.error || "Failed to fetch team members");
+        toast.error("Failed to load team members");
+      }
+    } catch (error) {
+      console.error("Error fetching team members:", error);
+      setError("Failed to fetch team members");
+      toast.error("Failed to load team members");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Calculate team statistics from real data
+  const teamStats = [
+    {
+      title: "Total Members",
+      value: teamMembers.length.toString(),
+      change: `${teamMembers.length} total`,
+      icon: Users,
+      color: "text-blue-600",
+      bgColor: "bg-blue-100 dark:bg-blue-900/20",
+    },
+    {
+      title: "Active Members",
+      value: teamMembers.filter((m) => m.status === "Active").length.toString(),
+      change: `${Math.round(
+        (teamMembers.filter((m) => m.status === "Active").length /
+          Math.max(teamMembers.length, 1)) *
+          100
+      )}% active rate`,
+      icon: UserCheck,
+      color: "text-green-600",
+      bgColor: "bg-green-100 dark:bg-green-900/20",
+    },
+    {
+      title: "Departments",
+      value: new Set(teamMembers.map((m) => m.department)).size.toString(),
+      change: "Well organized",
+      icon: Shield,
+      color: "text-orange-600",
+      bgColor: "bg-orange-100 dark:bg-orange-900/20",
+    },
+    {
+      title: "Total Skills",
+      value: teamMembers
+        .reduce((acc, m) => acc + (m.skills?.length || 0), 0)
+        .toString(),
+      change: "Skills tracked",
+      icon: Star,
+      color: "text-purple-600",
+      bgColor: "bg-purple-100 dark:bg-purple-900/20",
+    },
+  ];
 
   const filteredMembers = teamMembers.filter((member) => {
-    const matchesSearch = 
-      member.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    const fullName = `${member.firstName} ${member.lastName}`;
+    const matchesSearch =
+      fullName.toLowerCase().includes(searchQuery.toLowerCase()) ||
       member.email.toLowerCase().includes(searchQuery.toLowerCase()) ||
       member.role.toLowerCase().includes(searchQuery.toLowerCase());
-    
-    const matchesDepartment = filterDepartment === "All" || member.department === filterDepartment;
+
+    const matchesDepartment =
+      filterDepartment === "All" || member.department === filterDepartment;
     const matchesRole = filterRole === "All" || member.role === filterRole;
-    const matchesStatus = selectedStatus === "All" || member.status === selectedStatus;
-    
+    const matchesStatus =
+      selectedStatus === "All" || member.status === selectedStatus;
+
     return matchesSearch && matchesDepartment && matchesRole && matchesStatus;
   });
 
@@ -199,19 +186,31 @@ export default function TeamPage() {
     setIsTeamMemberFormOpen(true);
   };
 
-  const handleEditMember = (member: any) => {
+  const handleEditMember = (member: TeamMember) => {
     setEditingMember(member);
     setIsTeamMemberFormOpen(true);
   };
 
   const handleSaveMember = (memberData: any) => {
-    if (editingMember) {
-      console.log('Update member:', memberData);
-    } else {
-      console.log('Add new member:', memberData);
-    }
+    // Refresh the team members list after save
+    fetchTeamMembers();
     setIsTeamMemberFormOpen(false);
     setEditingMember(null);
+  };
+
+  const handleDeleteMember = async (memberId: string) => {
+    try {
+      const result = await deleteTeamMember(memberId);
+      if (result.success) {
+        toast.success("Team member deleted successfully");
+        fetchTeamMembers();
+      } else {
+        toast.error(result.error || "Failed to delete team member");
+      }
+    } catch (error) {
+      console.error("Error deleting team member:", error);
+      toast.error("Failed to delete team member");
+    }
   };
 
   const getStatusColor = (status: string) => {
@@ -232,6 +231,32 @@ export default function TeamPage() {
     if (role.includes("Manager")) return Shield;
     return UserCheck;
   };
+
+  if (loading) {
+    return (
+      <div className="p-6 space-y-6">
+        <div className="flex items-center justify-center min-h-[400px]">
+          <div className="flex items-center gap-2">
+            <Loader2 className="h-6 w-6 animate-spin" />
+            <span>Loading team members...</span>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="p-6 space-y-6">
+        <div className="flex items-center justify-center min-h-[400px]">
+          <div className="text-center">
+            <p className="text-red-500 mb-4">{error}</p>
+            <Button onClick={fetchTeamMembers}>Try Again</Button>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="p-6 space-y-6">
@@ -288,12 +313,13 @@ export default function TeamPage() {
               <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
               <Input
                 placeholder="Search team members..."
+                name="search"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 className="pl-10"
               />
             </div>
-            
+
             <div className="flex flex-wrap gap-2">
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
@@ -341,6 +367,7 @@ export default function TeamPage() {
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         {filteredMembers.map((member, index) => {
           const RoleIcon = getRoleIcon(member.role);
+          const fullName = `${member.firstName} ${member.lastName}`;
           return (
             <motion.div
               key={member.id}
@@ -354,8 +381,8 @@ export default function TeamPage() {
                     <div className="flex items-center gap-3">
                       <div className="relative">
                         <Image
-                          src={member.avatar}
-                          alt={member.name}
+                          src={member.avatar || "/logo.png"}
+                          alt={fullName}
                           width={48}
                           height={48}
                           className="rounded-full"
@@ -365,8 +392,10 @@ export default function TeamPage() {
                         </div>
                       </div>
                       <div>
-                        <h3 className="font-semibold text-lg">{member.name}</h3>
-                        <p className="text-sm text-muted-foreground">{member.role}</p>
+                        <h3 className="font-semibold text-lg">{fullName}</h3>
+                        <p className="text-sm text-muted-foreground">
+                          {member.role}
+                        </p>
                       </div>
                     </div>
                     <Badge variant={getStatusColor(member.status)}>
@@ -379,20 +408,22 @@ export default function TeamPage() {
                       <Mail className="h-4 w-4 text-muted-foreground" />
                       <span className="truncate">{member.email}</span>
                     </div>
-                    
+
                     <div className="flex items-center gap-2 text-sm">
                       <Phone className="h-4 w-4 text-muted-foreground" />
-                      <span>{member.phone}</span>
+                      <span>{member.phone || "N/A"}</span>
                     </div>
-                    
+
                     <div className="flex items-center gap-2 text-sm">
                       <MapPin className="h-4 w-4 text-muted-foreground" />
-                      <span>{member.location}</span>
+                      <span>{member.address || "N/A"}</span>
                     </div>
-                    
+
                     <div className="flex items-center gap-2 text-sm">
                       <Calendar className="h-4 w-4 text-muted-foreground" />
-                      <span>Joined {member.joinDate}</span>
+                      <span>
+                        Joined {new Date(member.startDate).toLocaleDateString()}
+                      </span>
                     </div>
 
                     <div className="pt-2 border-t">
@@ -402,42 +433,67 @@ export default function TeamPage() {
                           {member.department}
                         </Badge>
                       </div>
-                      
+
                       <div className="flex items-center justify-between text-xs text-muted-foreground mb-2">
-                        <span>Experience</span>
-                        <span className="font-medium">{member.experience}</span>
+                        <span>Skills</span>
+                        <span className="font-medium">
+                          {member.skills?.length || 0}
+                        </span>
                       </div>
-                      
-                      <div className="flex items-center justify-between text-xs text-muted-foreground">
-                        <span>Projects</span>
-                        <span className="font-medium">{member.projects}</span>
-                      </div>
+
+                      {member.salary && (
+                        <div className="flex items-center justify-between text-xs text-muted-foreground">
+                          <span>Salary</span>
+                          <span className="font-medium">
+                            {member.salary.toLocaleString()} RWF
+                          </span>
+                        </div>
+                      )}
                     </div>
 
                     <div className="pt-2">
-                      <p className="text-xs text-muted-foreground mb-1">Permissions:</p>
+                      <p className="text-xs text-muted-foreground mb-1">
+                        Permissions:
+                      </p>
                       <div className="flex flex-wrap gap-1">
-                        {member.permissions.map((permission) => (
-                          <Badge key={permission} variant="secondary" className="text-xs">
-                            {permission}
-                          </Badge>
-                        ))}
+                        {Object.entries(member.permissions || {})
+                          .filter(([_, value]) => value)
+                          .map(([permission]) => (
+                            <Badge
+                              key={permission}
+                              variant="secondary"
+                              className="text-xs"
+                            >
+                              {permission}
+                            </Badge>
+                          ))}
                       </div>
                     </div>
 
                     <div className="pt-2 border-t">
                       <p className="text-xs text-muted-foreground">
-                        Last active: {member.lastActive}
+                        Created:{" "}
+                        {new Date(member.createdAt).toLocaleDateString()}
                       </p>
                     </div>
                   </div>
 
                   <div className="flex items-center gap-2 mt-4 pt-4 border-t">
-                    <Button variant="outline" size="sm" className="flex-1" onClick={() => handleEditMember(member)}>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="flex-1"
+                      onClick={() => handleEditMember(member)}
+                    >
                       <Edit className="h-4 w-4 mr-1" />
                       Edit
                     </Button>
-                    <Button variant="outline" size="sm" className="text-destructive hover:text-destructive">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="text-destructive hover:text-destructive"
+                      onClick={() => handleDeleteMember(member.id)}
+                    >
                       <Trash2 className="h-4 w-4" />
                     </Button>
                   </div>
@@ -456,7 +512,7 @@ export default function TeamPage() {
           setEditingMember(null);
         }}
         onSave={handleSaveMember}
-        member={editingMember}
+        member={editingMember as any}
       />
     </div>
   );

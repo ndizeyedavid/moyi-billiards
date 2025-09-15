@@ -1,9 +1,13 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useTransition } from "react";
 import { motion } from "framer-motion";
 import { X, Upload, Save, Eye, Calendar, Clock } from "lucide-react";
+import { createBlogPost, updateBlogPost } from "@/lib/actions/blog-posts";
+import { BlogPostInput } from "@/lib/validations";
+import { toast } from "sonner";
 import Image from "next/image";
+import { ImageUpload } from "@/components/ui/image-upload";
 
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -20,22 +24,11 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 
-interface BlogPost {
-  id?: number;
-  title: string;
-  slug: string;
-  content: string;
-  excerpt: string;
-  author: string;
-  category: string;
-  status: string;
-  featured: boolean;
-  publishDate: string;
-  readTime: string;
-  tags: string[];
-  metaTitle?: string;
-  metaDescription?: string;
-  featuredImage?: string;
+interface BlogPost extends BlogPostInput {
+  id?: string;
+  readTime?: number;
+  wordCount?: number;
+  publishedAt?: Date;
 }
 
 interface BlogPostFormProps {
@@ -50,6 +43,7 @@ const statuses = ["Published", "Draft", "Scheduled"];
 const authors = ["Wilson Moyi", "Admin"];
 
 export default function BlogPostForm({ post, isOpen, onClose, onSave }: BlogPostFormProps) {
+  const [isPending, startTransition] = useTransition();
   const [formData, setFormData] = useState<BlogPost>({
     title: post?.title || "",
     slug: post?.slug || "",
@@ -59,15 +53,13 @@ export default function BlogPostForm({ post, isOpen, onClose, onSave }: BlogPost
     category: post?.category || "News",
     status: post?.status || "Draft",
     featured: post?.featured || false,
-    publishDate: post?.publishDate || new Date().toISOString().split('T')[0],
-    readTime: post?.readTime || "5 min read",
+    publishedAt: post?.publishedAt || new Date(),
     tags: post?.tags || [],
     metaTitle: post?.metaTitle || "",
     metaDescription: post?.metaDescription || "",
     featuredImage: post?.featuredImage || "",
   });
 
-  const [imagePreview, setImagePreview] = useState(post?.featuredImage || "");
   const [tagInput, setTagInput] = useState("");
   const [errors, setErrors] = useState<Record<string, string>>({});
 
@@ -90,17 +82,12 @@ export default function BlogPostForm({ post, isOpen, onClose, onSave }: BlogPost
     }
   };
 
-  const handleImageUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0];
-    if (file) {
-      const reader = new FileReader();
-      reader.onload = (e) => {
-        const result = e.target?.result as string;
-        setImagePreview(result);
-        handleInputChange("featuredImage", result);
-      };
-      reader.readAsDataURL(file);
-    }
+  const handleImageUpload = (url: string) => {
+    handleInputChange("featuredImage", url);
+  };
+
+  const handleImageRemove = () => {
+    handleInputChange("featuredImage", "");
   };
 
   const addTag = () => {
@@ -126,20 +113,40 @@ export default function BlogPostForm({ post, isOpen, onClose, onSave }: BlogPost
 
     if (!formData.title.trim()) newErrors.title = "Title is required";
     if (!formData.content.trim()) newErrors.content = "Content is required";
-    if (!formData.excerpt.trim()) newErrors.excerpt = "Excerpt is required";
+    if (!formData.excerpt?.trim()) newErrors.excerpt = "Excerpt is required";
     if (!formData.slug.trim()) newErrors.slug = "Slug is required";
 
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (validateForm()) {
-      const readTime = calculateReadTime(formData.content);
-      onSave({ ...formData, readTime, id: post?.id });
-      onClose();
-    }
+    if (!validateForm()) return;
+
+    startTransition(async () => {
+      try {
+        console.log("Saving blog post...");
+        let result;
+        
+        if (post?.id) {
+          result = await updateBlogPost(post.id, formData);
+        } else {
+          result = await createBlogPost(formData);
+        }
+
+        if (result.success) {
+          toast.success(post?.id ? "Blog post updated successfully!" : "Blog post created successfully!");
+          onSave({ ...formData, id: post?.id || result.data?.id });
+          onClose();
+        } else {
+          toast.error(result.error || "Failed to save blog post. Please try again.");
+        }
+      } catch (error) {
+        toast.error("An unexpected error occurred. Please try again.");
+        console.error("Error saving blog post:", error);
+      }
+    });
   };
 
   if (!isOpen) return null;
@@ -300,12 +307,12 @@ export default function BlogPostForm({ post, isOpen, onClose, onSave }: BlogPost
                     </div>
 
                     <div className="space-y-2">
-                      <Label htmlFor="publishDate">Publish Date</Label>
+                      <Label htmlFor="publishedAt">Publish Date</Label>
                       <Input
-                        id="publishDate"
+                        id="publishedAt"
                         type="date"
-                        value={formData.publishDate}
-                        onChange={(e) => handleInputChange("publishDate", e.target.value)}
+                        value={formData.publishedAt ? new Date(formData.publishedAt).toISOString().split('T')[0] : ""}
+                        onChange={(e) => handleInputChange("publishedAt", new Date(e.target.value))}
                       />
                     </div>
 
@@ -370,44 +377,16 @@ export default function BlogPostForm({ post, isOpen, onClose, onSave }: BlogPost
                     <CardTitle>Featured Image</CardTitle>
                   </CardHeader>
                   <CardContent>
-                    <div className="space-y-4">
-                      <div className="border-2 border-dashed border-gray-300 rounded-lg p-4 text-center">
-                        {imagePreview ? (
-                          <div className="relative">
-                            <Image
-                              src={imagePreview}
-                              alt="Featured image preview"
-                              width={200}
-                              height={120}
-                              className="mx-auto rounded-lg object-cover"
-                            />
-                            <Button
-                              type="button"
-                              variant="outline"
-                              size="sm"
-                              className="mt-2"
-                              onClick={() => {
-                                setImagePreview("");
-                                handleInputChange("featuredImage", "");
-                              }}
-                            >
-                              Remove Image
-                            </Button>
-                          </div>
-                        ) : (
-                          <div>
-                            <Upload className="h-8 w-8 text-gray-400 mx-auto mb-2" />
-                            <p className="text-sm text-gray-600">Upload featured image</p>
-                          </div>
-                        )}
-                      </div>
-                      <input
-                        type="file"
-                        accept="image/*"
-                        onChange={handleImageUpload}
-                        className="w-full text-sm"
-                      />
-                    </div>
+                    <ImageUpload
+                      value={formData.featuredImage || ""}
+                      onChange={handleImageUpload}
+                      onRemove={handleImageRemove}
+                      folder="blog"
+                      placeholder="Upload featured image"
+                      aspectRatio="video"
+                      width={200}
+                      height={120}
+                    />
                   </CardContent>
                 </Card>
               </div>
@@ -424,7 +403,7 @@ export default function BlogPostForm({ post, isOpen, onClose, onSave }: BlogPost
                 </Badge>
                 <div className="flex items-center gap-1 text-sm text-muted-foreground">
                   <Calendar className="h-3 w-3" />
-                  {formData.publishDate}
+                  {formData.publishedAt ? new Date(formData.publishedAt).toLocaleDateString() : "Not set"}
                 </div>
                 <div className="flex items-center gap-1 text-sm text-muted-foreground">
                   <Clock className="h-3 w-3" />

@@ -57,11 +57,11 @@ const navigationItems = [
     href: "/admin/dashboard/team",
     icon: Users,
   },
-  {
-    title: "Settings",
-    href: "/admin/dashboard/settings",
-    icon: Settings,
-  },
+  // {
+  //   title: "Settings",
+  //   href: "/admin/dashboard/settings",
+  //   icon: Settings,
+  // },
 ];
 
 export default function DashboardLayout({
