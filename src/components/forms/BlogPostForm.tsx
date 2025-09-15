@@ -126,25 +126,24 @@ export default function BlogPostForm({ post, isOpen, onClose, onSave }: BlogPost
 
     startTransition(async () => {
       try {
-        const readTime = calculateReadTime(formData.content);
-        const wordCount = formData.content.trim().split(/\s+/).length;
-        const blogPostData = {
-          ...formData,
-          readTime: parseInt(readTime),
-          wordCount,
-        };
-
+        console.log("Saving blog post...");
+        let result;
+        
         if (post?.id) {
-          await updateBlogPost(post.id, blogPostData);
-          toast.success("Blog post updated successfully!");
+          result = await updateBlogPost(post.id, formData);
         } else {
-          await createBlogPost(blogPostData);
-          toast.success("Blog post created successfully!");
+          result = await createBlogPost(formData);
         }
-        onSave({ ...formData, id: post?.id });
-        onClose();
+
+        if (result.success) {
+          toast.success(post?.id ? "Blog post updated successfully!" : "Blog post created successfully!");
+          onSave({ ...formData, id: post?.id || result.data?.id });
+          onClose();
+        } else {
+          toast.error(result.error || "Failed to save blog post. Please try again.");
+        }
       } catch (error) {
-        toast.error("Failed to save blog post. Please try again.");
+        toast.error("An unexpected error occurred. Please try again.");
         console.error("Error saving blog post:", error);
       }
     });

@@ -6,15 +6,40 @@ import { blogPostSchema, type BlogPostInput } from '@/lib/validations'
 
 export async function createBlogPost(data: BlogPostInput) {
   try {
-    // Validate input
-    const validatedData = blogPostSchema.parse(data)
+    console.log('Creating blog post with data:', data)
     
-    // Generate slug if not provided
-    if (!validatedData.slug) {
-      validatedData.slug = validatedData.title
-        .toLowerCase()
-        .replace(/[^a-z0-9]+/g, '-')
-        .replace(/(^-|-$)/g, '')
+    // Manual validation and transformation
+    const validatedData = {
+      title: data.title || '',
+      slug: data.slug || data.title?.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '') || '',
+      content: data.content || '',
+      excerpt: data.excerpt || null,
+      author: data.author || 'Wilson Moyi',
+      status: data.status as 'Draft' | 'Published' | 'Scheduled' || 'Draft',
+      publishedAt: data.publishedAt || null,
+      category: data.category || '',
+      tags: Array.isArray(data.tags) ? data.tags : [],
+      featured: Boolean(data.featured),
+      featuredImage: data.featuredImage || null,
+      metaTitle: data.metaTitle || null,
+      metaDescription: data.metaDescription || null,
+      readTime: null as number | null,
+      wordCount: null as number | null,
+    }
+    
+    // Basic validation
+    if (!validatedData.title.trim()) {
+      return {
+        success: false,
+        error: 'Blog post title is required'
+      }
+    }
+    
+    if (!validatedData.content.trim()) {
+      return {
+        success: false,
+        error: 'Blog post content is required'
+      }
     }
 
     // Calculate word count and read time
@@ -24,10 +49,13 @@ export async function createBlogPost(data: BlogPostInput) {
       validatedData.readTime = Math.ceil(wordCount / 200)
     }
 
+    console.log('Validated blog post data:', validatedData)
+
     const blogPost = await prisma.blogPost.create({
       data: validatedData,
     })
 
+    console.log('Blog post created successfully:', blogPost.id)
     revalidatePath('/admin/dashboard/posts')
     return { success: true, data: blogPost }
   } catch (error) {
@@ -41,8 +69,41 @@ export async function createBlogPost(data: BlogPostInput) {
 
 export async function updateBlogPost(id: string, data: BlogPostInput) {
   try {
-    // Validate input
-    const validatedData = blogPostSchema.parse(data)
+    console.log('Updating blog post with data:', data)
+    
+    // Manual validation and transformation
+    const validatedData = {
+      title: data.title || '',
+      slug: data.slug || data.title?.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '') || '',
+      content: data.content || '',
+      excerpt: data.excerpt || null,
+      author: data.author || 'Wilson Moyi',
+      status: data.status as 'Draft' | 'Published' | 'Scheduled' || 'Draft',
+      publishedAt: data.publishedAt || null,
+      category: data.category || '',
+      tags: Array.isArray(data.tags) ? data.tags : [],
+      featured: Boolean(data.featured),
+      featuredImage: data.featuredImage || null,
+      metaTitle: data.metaTitle || null,
+      metaDescription: data.metaDescription || null,
+      readTime: null as number | null,
+      wordCount: null as number | null,
+    }
+    
+    // Basic validation
+    if (!validatedData.title.trim()) {
+      return {
+        success: false,
+        error: 'Blog post title is required'
+      }
+    }
+    
+    if (!validatedData.content.trim()) {
+      return {
+        success: false,
+        error: 'Blog post content is required'
+      }
+    }
 
     // Recalculate word count and read time if content changed
     if (validatedData.content) {
@@ -51,11 +112,14 @@ export async function updateBlogPost(id: string, data: BlogPostInput) {
       validatedData.readTime = Math.ceil(wordCount / 200)
     }
 
+    console.log('Validated blog post data for update:', validatedData)
+
     const blogPost = await prisma.blogPost.update({
       where: { id },
       data: validatedData,
     })
 
+    console.log('Blog post updated successfully:', blogPost.id)
     revalidatePath('/admin/dashboard/posts')
     return { success: true, data: blogPost }
   } catch (error) {
