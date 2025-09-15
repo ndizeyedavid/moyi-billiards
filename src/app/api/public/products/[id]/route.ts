@@ -4,10 +4,10 @@ import { prisma } from "@/lib/prisma";
 // GET /api/public/products/[id] - Get single product details
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const productId = params.id;
+    const { id: productId } = await params;
 
     if (!productId) {
       return NextResponse.json(

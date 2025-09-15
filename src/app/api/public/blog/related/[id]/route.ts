@@ -4,10 +4,10 @@ import { prisma } from "@/lib/prisma";
 // GET /api/public/blog/related/[id] - Get related blog posts
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const postId = params.id;
+    const { id: postId } = await params;
 
     if (!postId) {
       return NextResponse.json(
