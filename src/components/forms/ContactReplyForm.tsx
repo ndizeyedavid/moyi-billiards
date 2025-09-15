@@ -12,8 +12,7 @@ import {
   Phone,
   Calendar,
 } from "lucide-react";
-import { createContactReply } from "@/lib/actions/contacts";
-import { ContactReplyInput } from "@/lib/validations";
+import { sendEmail, validateEmailJSConfig } from "@/lib/emailjs";
 import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
@@ -43,9 +42,18 @@ interface Contact {
   category: string;
 }
 
-interface ContactReply extends ContactReplyInput {
-  template?: string;
+interface ContactReply {
+  subject: string;
+  message: string;
+  cc?: string;
+  bcc?: string;
+  priority: "High" | "Urgent" | "Normal" | "Low";
+  scheduleSend: boolean;
+  scheduleDate?: Date;
+  scheduleTime?: string;
   sendCopy: boolean;
+  contactId: string;
+  template?: string;
 }
 
 interface ContactReplyFormProps {
@@ -188,7 +196,7 @@ export default function ContactReplyForm({
 }: ContactReplyFormProps) {
   const [isPending, startTransition] = useTransition();
   const [formData, setFormData] = useState<ContactReply>({
-    subject: `Re: ${contact.subject}`,
+    subject: `Re: Reply to user Message`,
     message: "",
     template: "custom",
     cc: "",
@@ -198,7 +206,7 @@ export default function ContactReplyForm({
     scheduleSend: false,
     scheduleDate: new Date(),
     scheduleTime: "",
-    contactId: contact.id,
+    contactId: Math.random().toString(),
   });
 
   const [errors, setErrors] = useState<Record<string, string>>({});
@@ -253,22 +261,43 @@ export default function ContactReplyForm({
     e.preventDefault();
     if (!validateForm()) return;
 
+    // Check if EmailJS is configured
+    if (!validateEmailJSConfig()) {
+      toast.error("Email service is not configured. Please check your environment variables.");
+      return;
+    }
+
     startTransition(async () => {
       try {
-        const replyData = {
+        // Prepare email parameters for EmailJS
+        const emailParams = {
+          to_email: contact.email,
+          to_name: contact.name,
+          from_name: "Wilson Moyi - Moyi Billiards",
+          from_email: "info@moyibilliards.com", // Your business email
           subject: formData.subject,
           message: formData.message,
-          cc: formData.cc || undefined,
-          bcc: formData.bcc || undefined,
-          priority: formData.priority as "High" | "Urgent" | "Normal" | "Low",
-          scheduleSend: formData.scheduleSend,
-          scheduleDate: formData.scheduleSend ? formData.scheduleDate : undefined,
-          scheduleTime: formData.scheduleSend ? formData.scheduleTime : undefined,
-          sendCopy: formData.sendCopy || false,
-          contactId: contact.id,
+          reply_to: "info@moyibilliards.com",
+          cc: formData.cc,
+          bcc: formData.bcc,
+          priority: formData.priority,
         };
 
-        await createContactReply(replyData);
+        // Send email directly to user
+        await sendEmail(emailParams);
+
+        // If user wants a copy, send to themselves too
+        if (formData.sendCopy) {
+          const copyParams = {
+            ...emailParams,
+            to_email: "info@moyibilliards.com", // Your business email
+            to_name: "Wilson Moyi",
+            subject: `[COPY] ${formData.subject}`,
+            message: `This is a copy of the reply sent to ${contact.name} (${contact.email}):\n\n${formData.message}`,
+          };
+          await sendEmail(copyParams);
+        }
+
         toast.success("Reply sent successfully!");
         onSend(formData);
         onClose();
@@ -455,9 +484,18 @@ export default function ContactReplyForm({
                           <Input
                             id="scheduleDate"
                             type="date"
-                            value={formData.scheduleDate ? new Date(formData.scheduleDate).toISOString().split('T')[0] : ""}
+                            value={
+                              formData.scheduleDate
+                                ? new Date(formData.scheduleDate)
+                                    .toISOString()
+                                    .split("T")[0]
+                                : ""
+                            }
                             onChange={(e) =>
-                              handleInputChange("scheduleDate", new Date(e.target.value))
+                              handleInputChange(
+                                "scheduleDate",
+                                new Date(e.target.value)
+                              )
                             }
                             className={
                               errors.scheduleDate ? "border-red-500" : ""
@@ -520,7 +558,8 @@ export default function ContactReplyForm({
                       <div className="flex items-center gap-2">
                         <Calendar className="h-4 w-4 text-muted-foreground" />
                         <span className="text-sm">
-                          {new Date(contact.createdAt).toLocaleDateString()} at {new Date(contact.createdAt).toLocaleTimeString()}
+                          {new Date(contact.createdAt).toLocaleDateString()} at{" "}
+                          {new Date(contact.createdAt).toLocaleTimeString()}
                         </span>
                       </div>
                     </div>
@@ -599,7 +638,11 @@ export default function ContactReplyForm({
                 )}
                 {formData.scheduleSend && (
                   <Badge variant="outline">
-                    Scheduled: {formData.scheduleDate ? new Date(formData.scheduleDate).toLocaleDateString() : ""} {formData.scheduleTime}
+                    Scheduled:{" "}
+                    {formData.scheduleDate
+                      ? new Date(formData.scheduleDate).toLocaleDateString()
+                      : ""}{" "}
+                    {formData.scheduleTime}
                   </Badge>
                 )}
               </div>

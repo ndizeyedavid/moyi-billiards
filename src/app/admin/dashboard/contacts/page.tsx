@@ -16,8 +16,11 @@ import {
   Clock,
   CheckCircle,
   AlertCircle,
+  Loader2,
 } from "lucide-react";
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { getContacts, deleteContact, createContactReply } from "@/lib/actions/contacts";
+import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -34,114 +37,31 @@ import ContactReplyForm from "@/components/forms/ContactReplyForm";
 
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
-// Mock data for contact forms
-const contactForms = [
-  {
-    id: 1,
-    name: "John Doe",
-    email: "john.doe@example.com",
-    phone: "+250 788 123 456",
-    subject: "Custom Pool Table Inquiry",
-    message: "I'm interested in getting a custom pool table for my home. Could you provide more information about your custom options and pricing?",
-    date: "2024-01-15",
-    time: "14:30",
-    status: "New",
-    priority: "High",
-    source: "Website",
-    category: "Sales Inquiry",
-  },
-  {
-    id: 2,
-    name: "Sarah Smith",
-    email: "sarah.smith@example.com",
-    phone: "+250 788 987 654",
-    subject: "Pool Table Maintenance Service",
-    message: "My pool table needs professional maintenance. The felt is worn and some pockets need repair. When can you schedule a service visit?",
-    date: "2024-01-14",
-    time: "10:15",
-    status: "Replied",
-    priority: "Medium",
-    source: "Website",
-    category: "Service Request",
-  },
-  {
-    id: 3,
-    name: "Mike Johnson",
-    email: "mike.johnson@example.com",
-    phone: "+250 788 456 789",
-    subject: "Installation Services",
-    message: "I purchased a pool table and need installation services. Do you provide installation in Kigali area?",
-    date: "2024-01-13",
-    time: "16:45",
-    status: "In Progress",
-    priority: "High",
-    source: "Phone",
-    category: "Installation",
-  },
-  {
-    id: 4,
-    name: "Emma Wilson",
-    email: "emma.wilson@example.com",
-    phone: "+250 788 321 987",
-    subject: "Tournament Table Rental",
-    message: "We're organizing a pool tournament and need to rent professional tournament tables. What are your rental rates and availability?",
-    date: "2024-01-12",
-    time: "09:20",
-    status: "Closed",
-    priority: "Medium",
-    source: "Website",
-    category: "Rental",
-  },
-  {
-    id: 5,
-    name: "David Brown",
-    email: "david.brown@example.com",
-    phone: "+250 788 654 321",
-    subject: "Bulk Order Inquiry",
-    message: "I represent a hotel chain and we're interested in purchasing multiple pool tables for our properties. Can we discuss bulk pricing?",
-    date: "2024-01-11",
-    time: "11:30",
-    status: "New",
-    priority: "High",
-    source: "Email",
-    category: "Bulk Order",
-  },
-];
+interface Contact {
+  id: string;
+  name: string;
+  email: string;
+  phone?: string | null;
+  subject: string;
+  message: string;
+  category: string;
+  status: string;
+  priority: string;
+  source: string;
+  createdAt: Date;
+  updatedAt: Date;
+  replies?: ContactReply[];
+}
 
-const contactStats = [
-  {
-    title: "Total Contacts",
-    value: "147",
-    change: "+12 this week",
-    icon: MessageSquare,
-    color: "text-blue-600",
-    bgColor: "bg-blue-100 dark:bg-blue-900/20",
-  },
-  {
-    title: "New Messages",
-    value: "23",
-    change: "+5 today",
-    icon: Mail,
-    color: "text-green-600",
-    bgColor: "bg-green-100 dark:bg-green-900/20",
-  },
-  {
-    title: "Response Rate",
-    value: "94%",
-    change: "+2% this month",
-    icon: CheckCircle,
-    color: "text-orange-600",
-    bgColor: "bg-orange-100 dark:bg-orange-900/20",
-  },
-  {
-    title: "Avg. Response Time",
-    value: "2.4h",
-    change: "-0.3h improvement",
-    icon: Clock,
-    color: "text-purple-600",
-    bgColor: "bg-purple-100 dark:bg-purple-900/20",
-  },
-];
+interface ContactReply {
+  id: string;
+  contactId: string;
+  subject: string;
+  message: string;
+  senderName?: string;
+  senderEmail?: string;
+  createdAt: Date;
+}
 
 const categories = ["All", "Sales Inquiry", "Service Request", "Installation", "Rental", "Bulk Order"];
 const statuses = ["All", "New", "In Progress", "Replied", "Closed"];
@@ -153,9 +73,87 @@ export default function ContactsPage() {
   const [filterStatus, setFilterStatus] = useState("All");
   const [filterPriority, setFilterPriority] = useState("All");
   const [isContactReplyFormOpen, setIsContactReplyFormOpen] = useState(false);
-  const [replyingToContact, setReplyingToContact] = useState<any>(null);
+  const [replyingToContact, setReplyingToContact] = useState<Contact | null>(null);
+  const [contacts, setContacts] = useState<Contact[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
-  const filteredContacts = contactForms.filter((contact) => {
+  // Fetch contacts on component mount and when filters change
+  useEffect(() => {
+    fetchContacts();
+  }, [searchQuery, filterCategory, filterStatus, filterPriority]);
+
+  const fetchContacts = async () => {
+    try {
+      setLoading(true);
+      setError(null);
+      const result = await getContacts({
+        search: searchQuery || undefined,
+        category: filterCategory !== "All" ? filterCategory : undefined,
+        status: filterStatus !== "All" ? filterStatus : undefined,
+        priority: filterPriority !== "All" ? filterPriority : undefined,
+        limit: 50, // Get more contacts for the dashboard
+      });
+      
+      if (result.success && result.data) {
+        // Transform the data to match our interface
+        const transformedContacts = result.data.contacts.map((contact: any) => ({
+          ...contact,
+          replies: contact.replies || [],
+        }));
+        setContacts(transformedContacts);
+      } else {
+        setError(result.error || "Failed to fetch contacts");
+        toast.error("Failed to load contacts");
+      }
+    } catch (error) {
+      console.error("Error fetching contacts:", error);
+      setError("Failed to fetch contacts");
+      toast.error("Failed to load contacts");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Calculate contact statistics from real data
+  const contactStats = [
+    {
+      title: "Total Contacts",
+      value: contacts.length.toString(),
+      change: `${contacts.length} total`,
+      icon: MessageSquare,
+      color: "text-blue-600",
+      bgColor: "bg-blue-100 dark:bg-blue-900/20",
+    },
+    {
+      title: "New Messages",
+      value: contacts.filter((c) => c.status === "New").length.toString(),
+      change: "Needs attention",
+      icon: Mail,
+      color: "text-green-600",
+      bgColor: "bg-green-100 dark:bg-green-900/20",
+    },
+    {
+      title: "Response Rate",
+      value: contacts.length > 0 
+        ? `${Math.round((contacts.filter((c) => c.status === "Replied").length / contacts.length) * 100)}%`
+        : "0%",
+      change: "Replied contacts",
+      icon: CheckCircle,
+      color: "text-orange-600",
+      bgColor: "bg-orange-100 dark:bg-orange-900/20",
+    },
+    {
+      title: "High Priority",
+      value: contacts.filter((c) => c.priority === "High").length.toString(),
+      change: "Urgent items",
+      icon: AlertCircle,
+      color: "text-red-600",
+      bgColor: "bg-red-100 dark:bg-red-900/20",
+    },
+  ];
+
+  const filteredContacts = contacts.filter((contact) => {
     const matchesSearch = 
       contact.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
       contact.email.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -169,15 +167,41 @@ export default function ContactsPage() {
     return matchesSearch && matchesCategory && matchesStatus && matchesPriority;
   });
 
-  const handleReplyToContact = (contact: any) => {
+  const handleReplyToContact = (contact: Contact) => {
     setReplyingToContact(contact);
     setIsContactReplyFormOpen(true);
   };
 
-  const handleSendReply = (replyData: any) => {
-    console.log('Send reply:', replyData);
+  const handleSendReply = async (replyData: any) => {
+    try {
+      const result = await createContactReply(replyData);
+      if (result.success) {
+        toast.success("Reply sent successfully");
+        fetchContacts(); // Refresh the contacts list
+      } else {
+        toast.error(result.error || "Failed to send reply");
+      }
+    } catch (error) {
+      console.error("Error sending reply:", error);
+      toast.error("Failed to send reply");
+    }
     setIsContactReplyFormOpen(false);
     setReplyingToContact(null);
+  };
+
+  const handleDeleteContact = async (contactId: string) => {
+    try {
+      const result = await deleteContact(contactId);
+      if (result.success) {
+        toast.success("Contact deleted successfully");
+        fetchContacts();
+      } else {
+        toast.error(result.error || "Failed to delete contact");
+      }
+    } catch (error) {
+      console.error("Error deleting contact:", error);
+      toast.error("Failed to delete contact");
+    }
   };
 
   const getStatusColor = (status: string) => {
@@ -207,6 +231,32 @@ export default function ContactsPage() {
         return "text-gray-600";
     }
   };
+
+  if (loading) {
+    return (
+      <div className="p-6 space-y-6">
+        <div className="flex items-center justify-center min-h-[400px]">
+          <div className="flex items-center gap-2">
+            <Loader2 className="h-6 w-6 animate-spin" />
+            <span>Loading contacts...</span>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="p-6 space-y-6">
+        <div className="flex items-center justify-center min-h-[400px]">
+          <div className="text-center">
+            <p className="text-red-500 mb-4">{error}</p>
+            <Button onClick={fetchContacts}>Try Again</Button>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="p-6 space-y-6">
@@ -386,7 +436,7 @@ export default function ContactsPage() {
                     </div>
                     <div className="flex items-center gap-1">
                       <Calendar className="h-3 w-3" />
-                      {contact.date} at {contact.time}
+                      {new Date(contact.createdAt).toLocaleDateString()} at {new Date(contact.createdAt).toLocaleTimeString()}
                     </div>
                     <Badge variant="outline" className="text-xs">
                       {contact.source}
@@ -404,7 +454,12 @@ export default function ContactsPage() {
                   <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => handleReplyToContact(contact)}>
                     <Reply className="h-4 w-4" />
                   </Button>
-                  <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive hover:text-destructive">
+                  <Button 
+                    variant="ghost" 
+                    size="icon" 
+                    className="h-8 w-8 text-destructive hover:text-destructive"
+                    onClick={() => handleDeleteContact(contact.id)}
+                  >
                     <Trash2 className="h-4 w-4" />
                   </Button>
                 </div>
@@ -422,7 +477,7 @@ export default function ContactsPage() {
           setReplyingToContact(null);
         }}
         onSend={handleSendReply}
-        contact={replyingToContact}
+        contact={replyingToContact as any}
       />
     </div>
   );

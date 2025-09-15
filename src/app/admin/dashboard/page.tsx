@@ -1,3 +1,4 @@
+"use client";
 import { motion } from "framer-motion";
 import {
   ShoppingBag,
@@ -26,11 +27,11 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Input } from "@/components/ui/input";
-import { 
-  getDashboardStats, 
-  getRecentProducts, 
-  getRecentBlogPosts, 
-  getRecentContacts 
+import {
+  getDashboardStats,
+  getRecentProducts,
+  getRecentBlogPosts,
+  getRecentContacts,
 } from "@/lib/actions/dashboard";
 import { useEffect, useState } from "react";
 
@@ -50,7 +51,7 @@ export default function DashboardPage() {
           getDashboardStats(),
           getRecentProducts(3),
           getRecentBlogPosts(3),
-          getRecentContacts(3)
+          getRecentContacts(3),
         ]);
 
         setDashboardData(stats);
@@ -58,7 +59,7 @@ export default function DashboardPage() {
         setRecentPosts(posts);
         setRecentContacts(contacts);
       } catch (error) {
-        console.error('Error fetching dashboard data:', error);
+        console.error("Error fetching dashboard data:", error);
       } finally {
         setLoading(false);
       }
@@ -67,40 +68,42 @@ export default function DashboardPage() {
     fetchDashboardData();
   }, []);
 
-  const dashboardStats = dashboardData ? [
-    {
-      title: "Total Products",
-      value: dashboardData.totalProducts.toString(),
-      change: `${dashboardData.activePosts} active`,
-      icon: ShoppingBag,
-      color: "text-blue-600",
-      bgColor: "bg-blue-100 dark:bg-blue-900/20",
-    },
-    {
-      title: "Blog Posts",
-      value: dashboardData.totalBlogPosts.toString(),
-      change: `${dashboardData.publishedPosts} published`,
-      icon: FileText,
-      color: "text-green-600",
-      bgColor: "bg-green-100 dark:bg-green-900/20",
-    },
-    {
-      title: "Contact Forms",
-      value: dashboardData.totalContacts.toString(),
-      change: `${dashboardData.newContacts} new`,
-      icon: MessageSquare,
-      color: "text-orange-600",
-      bgColor: "bg-orange-100 dark:bg-orange-900/20",
-    },
-    {
-      title: "Team Members",
-      value: dashboardData.totalTeamMembers.toString(),
-      change: "Active team",
-      icon: Users,
-      color: "text-purple-600",
-      bgColor: "bg-purple-100 dark:bg-purple-900/20",
-    },
-  ] : [];
+  const dashboardStats = dashboardData
+    ? [
+        {
+          title: "Total Products",
+          value: dashboardData.totalProducts.toString(),
+          change: `${dashboardData.activePosts} active`,
+          icon: ShoppingBag,
+          color: "text-blue-600",
+          bgColor: "bg-blue-100 dark:bg-blue-900/20",
+        },
+        {
+          title: "Blog Posts",
+          value: dashboardData.totalBlogPosts.toString(),
+          change: `${dashboardData.publishedPosts} published`,
+          icon: FileText,
+          color: "text-green-600",
+          bgColor: "bg-green-100 dark:bg-green-900/20",
+        },
+        {
+          title: "Contact Forms",
+          value: dashboardData.totalContacts.toString(),
+          change: `${dashboardData.newContacts} new`,
+          icon: MessageSquare,
+          color: "text-orange-600",
+          bgColor: "bg-orange-100 dark:bg-orange-900/20",
+        },
+        {
+          title: "Team Members",
+          value: dashboardData.totalTeamMembers.toString(),
+          change: "Active team",
+          icon: Users,
+          color: "text-purple-600",
+          bgColor: "bg-purple-100 dark:bg-purple-900/20",
+        },
+      ]
+    : [];
 
   return (
     <div className="min-h-screen bg-background">
@@ -113,52 +116,50 @@ export default function DashboardPage() {
         >
           {/* Stats Grid */}
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-            {loading ? (
-              Array.from({ length: 4 }).map((_, index) => (
-                <Card key={index}>
-                  <CardContent className="p-6">
-                    <div className="flex items-center justify-between">
-                      <div className="space-y-2">
-                        <div className="h-4 bg-muted rounded animate-pulse" />
-                        <div className="h-8 bg-muted rounded animate-pulse" />
-                        <div className="h-3 bg-muted rounded animate-pulse" />
-                      </div>
-                      <div className="p-3 rounded-lg bg-muted animate-pulse">
-                        <div className="h-6 w-6" />
-                      </div>
-                    </div>
-                  </CardContent>
-                </Card>
-              ))
-            ) : (
-              dashboardStats.map((stat, index) => (
-                <motion.div
-                  key={stat.title}
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ duration: 0.5, delay: index * 0.1 }}
-                >
-                  <Card>
+            {loading
+              ? Array.from({ length: 4 }).map((_, index) => (
+                  <Card key={index}>
                     <CardContent className="p-6">
                       <div className="flex items-center justify-between">
-                        <div>
-                          <p className="text-sm font-medium text-muted-foreground">
-                            {stat.title}
-                          </p>
-                          <p className="text-2xl font-bold">{stat.value}</p>
-                          <p className="text-xs text-muted-foreground mt-1">
-                            {stat.change}
-                          </p>
+                        <div className="space-y-2">
+                          <div className="h-4 bg-muted rounded animate-pulse" />
+                          <div className="h-8 bg-muted rounded animate-pulse" />
+                          <div className="h-3 bg-muted rounded animate-pulse" />
                         </div>
-                        <div className={`p-3 rounded-lg ${stat.bgColor}`}>
-                          <stat.icon className={`h-6 w-6 ${stat.color}`} />
+                        <div className="p-3 rounded-lg bg-muted animate-pulse">
+                          <div className="h-6 w-6" />
                         </div>
                       </div>
                     </CardContent>
                   </Card>
-                </motion.div>
-              ))
-            )}
+                ))
+              : dashboardStats.map((stat, index) => (
+                  <motion.div
+                    key={stat.title}
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ duration: 0.5, delay: index * 0.1 }}
+                  >
+                    <Card>
+                      <CardContent className="p-6">
+                        <div className="flex items-center justify-between">
+                          <div>
+                            <p className="text-sm font-medium text-muted-foreground">
+                              {stat.title}
+                            </p>
+                            <p className="text-2xl font-bold">{stat.value}</p>
+                            <p className="text-xs text-muted-foreground mt-1">
+                              {stat.change}
+                            </p>
+                          </div>
+                          <div className={`p-3 rounded-lg ${stat.bgColor}`}>
+                            <stat.icon className={`h-6 w-6 ${stat.color}`} />
+                          </div>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  </motion.div>
+                ))}
           </div>
 
           {/* Content Tabs */}
@@ -183,7 +184,10 @@ export default function DashboardPage() {
                   <div className="space-y-4">
                     {loading ? (
                       Array.from({ length: 3 }).map((_, index) => (
-                        <div key={index} className="flex items-center justify-between p-4 border rounded-lg">
+                        <div
+                          key={index}
+                          className="flex items-center justify-between p-4 border rounded-lg"
+                        >
                           <div className="flex items-center gap-4">
                             <div className="w-16 h-16 bg-muted rounded-lg animate-pulse" />
                             <div className="space-y-2">
@@ -227,7 +231,9 @@ export default function DashboardPage() {
                               <div className="flex items-center gap-2 mt-1">
                                 <Calendar className="h-3 w-3" />
                                 <span className="text-xs text-muted-foreground">
-                                  {new Date(product.createdAt).toLocaleDateString()}
+                                  {new Date(
+                                    product.createdAt
+                                  ).toLocaleDateString()}
                                 </span>
                               </div>
                             </div>
@@ -278,7 +284,10 @@ export default function DashboardPage() {
                   <div className="space-y-4">
                     {loading ? (
                       Array.from({ length: 3 }).map((_, index) => (
-                        <div key={index} className="flex items-center justify-between p-4 border rounded-lg">
+                        <div
+                          key={index}
+                          className="flex items-center justify-between p-4 border rounded-lg"
+                        >
                           <div className="flex items-center gap-4">
                             <div className="w-16 h-16 bg-muted rounded-lg animate-pulse" />
                             <div className="space-y-2">
@@ -307,12 +316,17 @@ export default function DashboardPage() {
                             <div>
                               <h3 className="font-medium">{post.title}</h3>
                               <p className="text-sm text-muted-foreground">
-                                By {post.author} • {new Date(post.publishedAt || post.createdAt).toLocaleDateString()}
+                                By {post.author} •{" "}
+                                {new Date(
+                                  post.publishedAt || post.createdAt
+                                ).toLocaleDateString()}
                               </p>
                               <div className="flex items-center gap-2 mt-1">
                                 <Calendar className="h-3 w-3" />
                                 <span className="text-xs text-muted-foreground">
-                                  {post.readTime ? `${post.readTime} min read` : 'Draft'}
+                                  {post.readTime
+                                    ? `${post.readTime} min read`
+                                    : "Draft"}
                                 </span>
                               </div>
                             </div>
@@ -359,7 +373,10 @@ export default function DashboardPage() {
                   <div className="space-y-4">
                     {loading ? (
                       Array.from({ length: 3 }).map((_, index) => (
-                        <div key={index} className="flex items-center justify-between p-4 border rounded-lg">
+                        <div
+                          key={index}
+                          className="flex items-center justify-between p-4 border rounded-lg"
+                        >
                           <div className="flex items-center gap-4">
                             <div className="w-16 h-16 bg-muted rounded-lg animate-pulse" />
                             <div className="space-y-2">
@@ -395,7 +412,9 @@ export default function DashboardPage() {
                               <div className="flex items-center gap-2 mt-1">
                                 <Calendar className="h-3 w-3" />
                                 <span className="text-xs text-muted-foreground">
-                                  {new Date(contact.createdAt).toLocaleDateString()}
+                                  {new Date(
+                                    contact.createdAt
+                                  ).toLocaleDateString()}
                                 </span>
                               </div>
                             </div>

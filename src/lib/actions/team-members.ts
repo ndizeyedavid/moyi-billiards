@@ -6,13 +6,55 @@ import { teamMemberSchema, type TeamMemberInput } from '@/lib/validations'
 
 export async function createTeamMember(data: TeamMemberInput) {
   try {
-    // Validate input
-    const validatedData = teamMemberSchema.parse(data)
+    console.log('Creating team member with data:', data)
+    
+    // Manual validation and transformation
+    const validatedData = {
+      firstName: data.firstName || '',
+      lastName: data.lastName || '',
+      email: data.email || '',
+      phone: data.phone || null,
+      avatar: data.avatar || null,
+      role: data.role || '',
+      department: data.department || '',
+      startDate: data.startDate || new Date(),
+      salary: data.salary ? Number(data.salary) : null,
+      status: data.status as 'Active' | 'On Leave' | 'Inactive' || 'Active',
+      skills: Array.isArray(data.skills) ? data.skills : [],
+      permissions: data.permissions ? JSON.parse(JSON.stringify(data.permissions)) : null,
+      emergencyContact: data.emergencyContact ? JSON.parse(JSON.stringify(data.emergencyContact)) : null,
+      address: data.address || null,
+    }
+    
+    // Basic validation
+    if (!validatedData.firstName.trim()) {
+      return {
+        success: false,
+        error: 'First name is required'
+      }
+    }
+    
+    if (!validatedData.lastName.trim()) {
+      return {
+        success: false,
+        error: 'Last name is required'
+      }
+    }
+    
+    if (!validatedData.email.trim()) {
+      return {
+        success: false,
+        error: 'Email is required'
+      }
+    }
+
+    console.log('Validated team member data:', validatedData)
 
     const teamMember = await prisma.teamMember.create({
       data: validatedData,
     })
 
+    console.log('Team member created successfully:', teamMember.id)
     revalidatePath('/admin/dashboard/team')
     return { success: true, data: teamMember }
   } catch (error) {
@@ -26,17 +68,56 @@ export async function createTeamMember(data: TeamMemberInput) {
 
 export async function updateTeamMember(id: string, data: TeamMemberInput) {
   try {
-    // Validate input
-    const validatedData = teamMemberSchema.parse(data)
+    console.log('Updating team member with data:', data)
+    
+    // Manual validation and transformation
+    const validatedData = {
+      firstName: data.firstName || '',
+      lastName: data.lastName || '',
+      email: data.email || '',
+      phone: data.phone || null,
+      avatar: data.avatar || null,
+      role: data.role || '',
+      department: data.department || '',
+      startDate: data.startDate || new Date(),
+      salary: data.salary ? Number(data.salary) : null,
+      status: data.status as 'Active' | 'On Leave' | 'Inactive' || 'Active',
+      skills: Array.isArray(data.skills) ? data.skills : [],
+      permissions: data.permissions ? JSON.parse(JSON.stringify(data.permissions)) : null,
+      emergencyContact: data.emergencyContact ? JSON.parse(JSON.stringify(data.emergencyContact)) : null,
+      address: data.address || null,
+    }
+    
+    // Basic validation
+    if (!validatedData.firstName.trim()) {
+      return {
+        success: false,
+        error: 'First name is required'
+      }
+    }
+    
+    if (!validatedData.lastName.trim()) {
+      return {
+        success: false,
+        error: 'Last name is required'
+      }
+    }
+    
+    if (!validatedData.email.trim()) {
+      return {
+        success: false,
+        error: 'Email is required'
+      }
+    }
+
+    console.log('Validated team member data for update:', validatedData)
 
     const teamMember = await prisma.teamMember.update({
       where: { id },
-      data: {
-        ...validatedData,
-        lastActive: new Date(),
-      },
+      data: validatedData,
     })
 
+    console.log('Team member updated successfully:', teamMember.id)
     revalidatePath('/admin/dashboard/team')
     return { success: true, data: teamMember }
   } catch (error) {
