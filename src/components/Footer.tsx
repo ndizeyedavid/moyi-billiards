@@ -82,13 +82,13 @@ export default function Footer() {
       <div className="mx-auto max-w-screen-xl px-4 pt-16 pb-6 sm:px-6 lg:px-8 lg:pt-24">
         <div className="grid grid-cols-1 gap-8 lg:grid-cols-3">
           <div>
-            <div className="text-primary flex justify-center gap-2 sm:justify-start">
+            <div className="text-primary flex justify-center items-center gap-2 sm:justify-start">
               <Image
                 src={data.company.logo}
                 alt={data.company.name}
-                width={32}
-                height={32}
-                className="h-8 w-auto"
+                width={50}
+                height={50}
+                className="size-12"
               />
               <span className="text-2xl font-semibold">
                 {data.company.name}
