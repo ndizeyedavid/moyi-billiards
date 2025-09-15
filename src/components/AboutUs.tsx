@@ -249,7 +249,7 @@ export default function AboutUs() {
               <h2 className="text-2xl font-bold tracking-tight">Our Legacy</h2>
 
               <p className="text-muted-foreground text-base leading-relaxed">
-                Since 2020, we've revolutionized the billiards industry through
+                Since 2020, we&apos;ve revolutionized the billiards industry through
                 innovation and craftsmanship. Each table tells a story of
                 precision, passion, and perfection.
               </p>

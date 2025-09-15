@@ -12,7 +12,7 @@ export default function page() {
             News
           </h1>
           <p className="text-white/55">
-            We've got amazing announcements plus great sport news
+            We&apos;ve got amazing announcements plus great sport news
           </p>
         </header>
 

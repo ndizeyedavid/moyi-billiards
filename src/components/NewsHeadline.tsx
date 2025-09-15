@@ -1,5 +1,6 @@
 import { INewsHeadline } from "@/types/NewsHeadline";
 import Link from "next/link";
+import Image from "next/image";
 
 export default function NewsHeadline({
   id,
@@ -16,12 +17,12 @@ export default function NewsHeadline({
       className="transition-all hover:-translate-y-3 flex flex-col overflow-hidden h-fit w-[90%] border border-white/10 rounded-lg gap-[32px]"
     >
       {/* thumbnail */}
-      <img
+      <Image
         src={thumbnail}
         className="w-full h-[328px] object-cover"
         alt={title + " Thumbnail"}
         width={500}
-        height={500}
+        height={328}
       />
 
       {/* contents */}

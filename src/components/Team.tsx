@@ -3,6 +3,7 @@
 import React from "react";
 import { cn } from "@/lib/utils";
 import { motion } from "framer-motion";
+import Image from "next/image";
 
 interface TeamMember {
   name: string;
@@ -125,12 +126,14 @@ function TeamMemberCard({
       {/* Image container */}
       <div className="bg-muted relative aspect-square overflow-hidden rounded-xl">
         <div className="from-background/80 absolute inset-0 z-10 bg-gradient-to-t via-transparent to-transparent opacity-0 transition-opacity duration-300 group-hover:opacity-100" />
-        <img
+        <Image
           src={member.imageUrl}
           alt={member.name}
+          width={300}
+          height={300}
           sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 25vw"
           className="object-cover transition-transform duration-500 group-hover:scale-110"
-        />{" "}
+        />
       </div>
 
       {/* Name and role */}

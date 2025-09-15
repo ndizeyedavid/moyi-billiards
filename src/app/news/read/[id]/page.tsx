@@ -15,7 +15,6 @@ import {
   Twitter,
   Linkedin,
   Copy,
-  User,
   Tag,
   ChevronRight,
   MessageCircle,

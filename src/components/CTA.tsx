@@ -6,7 +6,7 @@ export default function CTA() {
     <div className="flex flex-col gap-[96px] items-center justify-center mt-[105px] md:mt-[90px]">
       <div className="flex flex-col items-center justify-center gap-3 text-center">
         <h3 className="text-white leading-[30px] text-[30px] md:text-[52px] font-semibold flex flex-col md:flex-row items-center gap-1.5">
-          It's as awesome as{" "}
+          It&apos;s as awesome as{" "}
           <span className="text-[#59d499] flex items-center justify-center gap-1">
             Winning{" "}
             <Verified className="w-[30px] h-[30px] md:w-[52px] md:h-[52px]" />
@@ -36,7 +36,7 @@ export default function CTA() {
           <p className="text-white/45 md:text-[17px] text-[15px]">
             On top of the core Raycast Extensions already built in, you can
             install Extensions built by Developers from the community.
-            Everything you've asked for, in one place. Search and browse
+            Everything you&apos;ve asked for, in one place. Search and browse
             Extensions for your tools, actions and more.
           </p>
         </div>

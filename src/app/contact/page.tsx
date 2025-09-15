@@ -13,7 +13,6 @@ import {
   Instagram,
   Twitter,
   CheckCircle,
-  AlertCircle,
 } from "lucide-react";
 
 import Footer from "@/components/Footer";
@@ -70,7 +69,7 @@ export default function ContactPage() {
 
   const handleWhatsAppContact = () => {
     const message = encodeURIComponent(
-      `Hello! I'm interested in your pool tables and would like to get more information. My name is ${
+      `Hello! I&apos;m interested in your pool tables and would like to get more information. My name is ${
         formData.name || "[Your Name]"
       }.`
     );
@@ -89,7 +88,7 @@ export default function ContactPage() {
       title: "Email",
       details: [
         "thegreatmoyibilliards760@gmail.com",
-        "We'll respond within 24 hours",
+        "We&apos;ll respond within 24 hours",
       ],
       action: () => window.open("mailto:thegreatmoyibilliards760@gmail.com"),
     },
@@ -152,7 +151,7 @@ export default function ContactPage() {
               Get in Touch
             </h1>
             <p className="text-xl text-muted-foreground max-w-2xl mx-auto">
-              Ready to transform your space with a premium pool table? We're
+              Ready to transform your space with a premium pool table? We&apos;re
               here to help you find the perfect fit.
             </p>
           </motion.div>
@@ -169,7 +168,7 @@ export default function ContactPage() {
                 <CardHeader>
                   <CardTitle className="text-2xl">Send us a Message</CardTitle>
                   <p className="text-muted-foreground">
-                    Fill out the form below and we'll get back to you as soon as
+                    Fill out the form below and we&apos;ll get back to you as soon as
                     possible.
                   </p>
                 </CardHeader>
@@ -182,7 +181,7 @@ export default function ContactPage() {
                     >
                       <CheckCircle className="h-5 w-5 text-green-600" />
                       <span className="text-green-800 dark:text-green-200">
-                        Message sent successfully! We'll get back to you soon.
+                        Message sent successfully! We&apos;ll get back to you soon.
                       </span>
                     </motion.div>
                   )}
@@ -265,7 +264,7 @@ export default function ContactPage() {
                         onChange={handleInputChange}
                         required
                         className="w-full px-3 py-2 border border-border rounded-lg bg-background focus:outline-none focus:ring-2 focus:ring-rose-500 focus:border-transparent"
-                        placeholder="What's this about?"
+                        placeholder="What&apos;s this about?"
                       />
                     </div>
 

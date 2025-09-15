@@ -10,7 +10,6 @@ export function capitalize(str: string) {
   return str.charAt(0).toUpperCase() + str.slice(1);
 }
 
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
 type GroupBy<T, K extends keyof T> = Record<string, T[]>;
 
 export function groupBy<T, K extends keyof T>(

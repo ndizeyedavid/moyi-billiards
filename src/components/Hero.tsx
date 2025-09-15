@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { ArrowRight } from "lucide-react";
 import { Pacifico } from "next/font/google";
 import { cn } from "@/lib/utils";
+import Image from "next/image";
 
 const pacifico = Pacifico({
   subsets: ["latin"],
@@ -161,7 +162,7 @@ export default function Hero({
             animate="visible"
             className="border-primary/30 bg-card/50 mb-8 inline-flex items-center gap-2 rounded-full border px-4 py-1.5 shadow-sm backdrop-blur-sm md:mb-12"
           >
-            <img src="thumb.png" alt="logo" className="h-6 w-6" />
+            <Image src="/thumb.png" alt="logo" width={24} height={24} className="h-6 w-6" />
             <span className="text-foreground text-sm font-medium tracking-wide">
               {badge}
             </span>
