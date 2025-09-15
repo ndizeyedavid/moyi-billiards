@@ -39,7 +39,12 @@ const categories = ["Professional", "Standard", "Premium", "Compact"];
 const statuses = ["Active", "Draft", "Out of Stock"];
 const currencies = ["RWF", "USD", "EUR"];
 
-export default function ProductForm({ product, isOpen, onClose, onSave }: ProductFormProps) {
+export default function ProductForm({
+  product,
+  isOpen,
+  onClose,
+  onSave,
+}: ProductFormProps) {
   const [isPending, startTransition] = useTransition();
   const [formData, setFormData] = useState<Product>({
     name: product?.name || "",
@@ -59,15 +64,16 @@ export default function ProductForm({ product, isOpen, onClose, onSave }: Produc
   });
   const [errors, setErrors] = useState<Record<string, string>>({});
   const handleInputChange = (field: keyof Product, value: any) => {
-    setFormData(prev => ({ ...prev, [field]: value }));
+    setFormData((prev) => ({ ...prev, [field]: value }));
     // Clear error when user starts typing
     if (errors[field]) {
-      setErrors(prev => ({ ...prev, [field]: "" }));
+      setErrors((prev) => ({ ...prev, [field]: "" }));
     }
   };
 
   const handleImageUpload = (url: string) => {
     handleInputChange("images", [url]);
+    // Toast is already shown by ImageUpload component
   };
 
   const handleImageRemove = () => {
@@ -78,10 +84,12 @@ export default function ProductForm({ product, isOpen, onClose, onSave }: Produc
     const newErrors: Record<string, string> = {};
 
     if (!formData.name.trim()) newErrors.name = "Product name is required";
-    if (!formData.description?.trim()) newErrors.description = "Description is required";
+    if (!formData.description?.trim())
+      newErrors.description = "Description is required";
     if (formData.price <= 0) newErrors.price = "Price must be greater than 0";
     if (formData.stock < 0) newErrors.stock = "Stock cannot be negative";
-    if (!formData.images || formData.images.length === 0) newErrors.images = "Product image is required";
+    if (!formData.images || formData.images.length === 0)
+      newErrors.images = "Product image is required";
 
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
@@ -93,17 +101,32 @@ export default function ProductForm({ product, isOpen, onClose, onSave }: Produc
 
     startTransition(async () => {
       try {
+        console.log("saving.....");
+        let result;
         if (product?.id) {
-          await updateProduct(product.id, formData);
-          toast.success("Product updated successfully!");
+          result = await updateProduct(product.id, formData);
         } else {
-          await createProduct(formData);
-          toast.success("Product created successfully!");
+          result = await createProduct(formData);
+          console.log(result);
         }
-        onSave({ ...formData, id: product?.id });
-        onClose();
+
+        if (result.success) {
+          console.log("Product saved successfully:");
+          toast.success(
+            product?.id
+              ? "Product updated successfully!"
+              : "Product created successfully!"
+          );
+          onSave({ ...formData, id: product?.id || result.data?.id });
+          onClose();
+        } else {
+          toast.error(
+            result.error || "Failed to save product. Please try again."
+          );
+          console.error(result.error);
+        }
       } catch (error) {
-        toast.error("Failed to save product. Please try again.");
+        toast.error("An unexpected error occurred. Please try again.");
         console.error("Error saving product:", error);
       }
     });
@@ -143,11 +166,15 @@ export default function ProductForm({ product, isOpen, onClose, onSave }: Produc
                       <Input
                         id="name"
                         value={formData.name}
-                        onChange={(e) => handleInputChange("name", e.target.value)}
+                        onChange={(e) =>
+                          handleInputChange("name", e.target.value)
+                        }
                         placeholder="Enter product name"
                         className={errors.name ? "border-red-500" : ""}
                       />
-                      {errors.name && <p className="text-sm text-red-500">{errors.name}</p>}
+                      {errors.name && (
+                        <p className="text-sm text-red-500">{errors.name}</p>
+                      )}
                     </div>
 
                     <div className="space-y-2">
@@ -155,18 +182,29 @@ export default function ProductForm({ product, isOpen, onClose, onSave }: Produc
                       <Textarea
                         id="description"
                         value={formData.description}
-                        onChange={(e) => handleInputChange("description", e.target.value)}
+                        onChange={(e) =>
+                          handleInputChange("description", e.target.value)
+                        }
                         placeholder="Enter product description"
                         rows={4}
                         className={errors.description ? "border-red-500" : ""}
                       />
-                      {errors.description && <p className="text-sm text-red-500">{errors.description}</p>}
+                      {errors.description && (
+                        <p className="text-sm text-red-500">
+                          {errors.description}
+                        </p>
+                      )}
                     </div>
 
                     <div className="grid grid-cols-2 gap-4">
                       <div className="space-y-2">
                         <Label htmlFor="category">Category</Label>
-                        <Select value={formData.category} onValueChange={(value) => handleInputChange("category", value)}>
+                        <Select
+                          value={formData.category}
+                          onValueChange={(value) =>
+                            handleInputChange("category", value)
+                          }
+                        >
                           <SelectTrigger>
                             <SelectValue placeholder="Select category" />
                           </SelectTrigger>
@@ -182,7 +220,12 @@ export default function ProductForm({ product, isOpen, onClose, onSave }: Produc
 
                       <div className="space-y-2">
                         <Label htmlFor="status">Status</Label>
-                        <Select value={formData.status} onValueChange={(value) => handleInputChange("status", value)}>
+                        <Select
+                          value={formData.status}
+                          onValueChange={(value) =>
+                            handleInputChange("status", value)
+                          }
+                        >
                           <SelectTrigger>
                             <SelectValue placeholder="Select status" />
                           </SelectTrigger>
@@ -204,16 +247,25 @@ export default function ProductForm({ product, isOpen, onClose, onSave }: Produc
                           id="price"
                           type="number"
                           value={formData.price}
-                          onChange={(e) => handleInputChange("price", Number(e.target.value))}
+                          onChange={(e) =>
+                            handleInputChange("price", Number(e.target.value))
+                          }
                           placeholder="0"
                           className={errors.price ? "border-red-500" : ""}
                         />
-                        {errors.price && <p className="text-sm text-red-500">{errors.price}</p>}
+                        {errors.price && (
+                          <p className="text-sm text-red-500">{errors.price}</p>
+                        )}
                       </div>
 
                       <div className="space-y-2">
                         <Label htmlFor="currency">Currency</Label>
-                        <Select value={formData.currency} onValueChange={(value) => handleInputChange("currency", value)}>
+                        <Select
+                          value={formData.currency}
+                          onValueChange={(value) =>
+                            handleInputChange("currency", value)
+                          }
+                        >
                           <SelectTrigger>
                             <SelectValue placeholder="Select currency" />
                           </SelectTrigger>
@@ -234,18 +286,24 @@ export default function ProductForm({ product, isOpen, onClose, onSave }: Produc
                         id="stock"
                         type="number"
                         value={formData.stock}
-                        onChange={(e) => handleInputChange("stock", Number(e.target.value))}
+                        onChange={(e) =>
+                          handleInputChange("stock", Number(e.target.value))
+                        }
                         placeholder="0"
                         className={errors.stock ? "border-red-500" : ""}
                       />
-                      {errors.stock && <p className="text-sm text-red-500">{errors.stock}</p>}
+                      {errors.stock && (
+                        <p className="text-sm text-red-500">{errors.stock}</p>
+                      )}
                     </div>
 
                     <div className="flex items-center space-x-2">
                       <Switch
                         id="featured"
                         checked={formData.featured}
-                        onCheckedChange={(checked) => handleInputChange("featured", checked)}
+                        onCheckedChange={(checked) =>
+                          handleInputChange("featured", checked)
+                        }
                       />
                       <Label htmlFor="featured">Featured Product</Label>
                     </div>
@@ -268,7 +326,11 @@ export default function ProductForm({ product, isOpen, onClose, onSave }: Produc
                       placeholder="Upload product image"
                       aspectRatio="video"
                     />
-                    {errors.images && <p className="text-sm text-red-500 mt-2">{errors.images}</p>}
+                    {errors.images && (
+                      <p className="text-sm text-red-500 mt-2">
+                        {errors.images}
+                      </p>
+                    )}
                   </CardContent>
                 </Card>
 
@@ -281,8 +343,15 @@ export default function ProductForm({ product, isOpen, onClose, onSave }: Produc
                       <Label htmlFor="dimensions">Dimensions</Label>
                       <Input
                         id="dimensions"
-                        value={(formData.specifications as any)?.dimensions || ""}
-                        onChange={(e) => handleInputChange("specifications", { ...formData.specifications, dimensions: e.target.value })}
+                        value={
+                          (formData.specifications as any)?.dimensions || ""
+                        }
+                        onChange={(e) =>
+                          handleInputChange("specifications", {
+                            ...formData.specifications,
+                            dimensions: e.target.value,
+                          })
+                        }
                         placeholder="e.g., 9ft x 4.5ft x 32in"
                       />
                     </div>
@@ -292,7 +361,12 @@ export default function ProductForm({ product, isOpen, onClose, onSave }: Produc
                       <Input
                         id="weight"
                         value={(formData.specifications as any)?.weight || ""}
-                        onChange={(e) => handleInputChange("specifications", { ...formData.specifications, weight: e.target.value })}
+                        onChange={(e) =>
+                          handleInputChange("specifications", {
+                            ...formData.specifications,
+                            weight: e.target.value,
+                          })
+                        }
                         placeholder="e.g., 700 lbs"
                       />
                     </div>
@@ -302,7 +376,12 @@ export default function ProductForm({ product, isOpen, onClose, onSave }: Produc
                       <Input
                         id="material"
                         value={(formData.specifications as any)?.material || ""}
-                        onChange={(e) => handleInputChange("specifications", { ...formData.specifications, material: e.target.value })}
+                        onChange={(e) =>
+                          handleInputChange("specifications", {
+                            ...formData.specifications,
+                            material: e.target.value,
+                          })
+                        }
                         placeholder="e.g., Slate bed, Hardwood frame"
                       />
                     </div>
@@ -312,7 +391,12 @@ export default function ProductForm({ product, isOpen, onClose, onSave }: Produc
                       <Input
                         id="warranty"
                         value={(formData.specifications as any)?.warranty || ""}
-                        onChange={(e) => handleInputChange("specifications", { ...formData.specifications, warranty: e.target.value })}
+                        onChange={(e) =>
+                          handleInputChange("specifications", {
+                            ...formData.specifications,
+                            warranty: e.target.value,
+                          })
+                        }
                         placeholder="e.g., 1 year"
                       />
                     </div>
@@ -322,7 +406,9 @@ export default function ProductForm({ product, isOpen, onClose, onSave }: Produc
                       <Input
                         id="sku"
                         value={formData.sku || ""}
-                        onChange={(e) => handleInputChange("sku", e.target.value)}
+                        onChange={(e) =>
+                          handleInputChange("sku", e.target.value)
+                        }
                         placeholder="Product SKU"
                       />
                     </div>
@@ -337,22 +423,26 @@ export default function ProductForm({ product, isOpen, onClose, onSave }: Produc
                 {formData.featured && (
                   <Badge variant="outline">Featured Product</Badge>
                 )}
-                <Badge variant={formData.status === "Active" ? "default" : "secondary"}>
+                <Badge
+                  variant={
+                    formData.status === "Active" ? "default" : "secondary"
+                  }
+                >
                   {formData.status}
                 </Badge>
               </div>
-              
+
               <div className="flex items-center gap-2">
                 <Button type="button" variant="outline" onClick={onClose}>
                   Cancel
                 </Button>
-                <Button type="button" variant="outline" className="gap-2">
-                  <Eye className="h-4 w-4" />
-                  Preview
-                </Button>
-                <Button type="submit" className="gap-2">
+                <Button type="submit" className="gap-2" disabled={isPending}>
                   <Save className="h-4 w-4" />
-                  {product ? "Update Product" : "Save Product"}
+                  {isPending
+                    ? "Saving..."
+                    : product
+                    ? "Update Product"
+                    : "Save Product"}
                 </Button>
               </div>
             </div>
