@@ -20,7 +20,7 @@ export const metadata: Metadata = {
   description:
     "Moyi Billiards offers a premium collection of high-quality billiards for enthusiasts and professionals alike. Explore our catalog and find the perfect billiard for your game.",
   icons: {
-    icon: "thumb.png",
+    icon: "/thumb.png",
   },
   keywords: [
     "Moyi Billiards",
