@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { contactSchema } from '@/lib/validations'
-import { Prisma } from '@prisma/client'
+import { type Prisma } from '@prisma/client'
 
 // GET /api/contacts - Get all contacts with filtering and pagination
 export async function GET(request: NextRequest) {
@@ -17,7 +17,7 @@ export async function GET(request: NextRequest) {
     const skip = (page - 1) * limit
 
     // Build where clause
-    const where: Prisma.ContactWhereInput = {}
+    const where = {} as Prisma.ContactWhereInput
 
     if (search) {
       where.OR = [
