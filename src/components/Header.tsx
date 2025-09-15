@@ -2,17 +2,51 @@
 
 import React, { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Menu, X, ChevronDown, ArrowRight, Sparkles } from "lucide-react";
+import {
+  Menu,
+  X,
+  ChevronDown,
+  ArrowRight,
+  Sparkles,
+  Globe,
+} from "lucide-react";
 import Link from "next/link";
 import { useTheme } from "next-themes";
 import Image from "next/image";
 import { Product } from "@prisma/client";
+import { Button } from "./ui/button";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "./ui/dropdown-menu";
 
 interface NavItem {
   name: string;
   href: string;
   hasDropdown?: boolean;
   dropdownItems?: { name: string; href: string; description?: string }[];
+}
+
+interface Language {
+  code: string;
+  name: string;
+  flag: string;
+}
+
+const languages: Language[] = [
+  { code: "en", name: "English", flag: "us" },
+  { code: "rw", name: "Kinyarwanda", flag: "🇷🇼" },
+  { code: "fr", name: "Français", flag: "🇫🇷" },
+];
+
+// Declare global google translate function
+declare global {
+  interface Window {
+    googleTranslateElementInit: () => void;
+    google: any;
+  }
 }
 
 const navItems: NavItem[] = [
@@ -47,6 +81,10 @@ export default function Header() {
   const [activeDropdown, setActiveDropdown] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [products, setProducts] = useState<Product[]>([]);
+  const [currentLanguage, setCurrentLanguage] = useState<Language>(
+    languages[0]
+  );
+  const [isTranslateLoaded, setIsTranslateLoaded] = useState(false);
   const { theme } = useTheme();
 
   useEffect(() => {
@@ -66,6 +104,59 @@ export default function Header() {
 
     fetchProducts();
   }, []);
+
+  // Initialize Google Translate
+  useEffect(() => {
+    const addGoogleTranslateScript = () => {
+      if (window.google?.translate) {
+        setIsTranslateLoaded(true);
+        return;
+      }
+
+      const script = document.createElement("script");
+      script.src =
+        "https://translate.google.com/translate_a/element.js?cb=googleTranslateElementInit";
+      script.async = true;
+      document.head.appendChild(script);
+
+      window.googleTranslateElementInit = () => {
+        new window.google.translate.TranslateElement(
+          {
+            pageLanguage: "en",
+            includedLanguages: "en,rw,fr",
+            layout:
+              window.google.translate.TranslateElement.InlineLayout.SIMPLE,
+            autoDisplay: false,
+          },
+          "google_translate_element"
+        );
+        setIsTranslateLoaded(true);
+      };
+    };
+
+    addGoogleTranslateScript();
+  }, []);
+
+  const changeLanguage = (language: Language) => {
+    setCurrentLanguage(language);
+
+    if (isTranslateLoaded && window.google?.translate) {
+      const translateElement =
+        window.google.translate.TranslateElement.getInstance();
+      if (translateElement) {
+        translateElement.showBanner(false);
+
+        // Trigger translation
+        const selectElement = document.querySelector(
+          ".goog-te-combo"
+        ) as HTMLSelectElement;
+        if (selectElement) {
+          selectElement.value = language.code;
+          selectElement.dispatchEvent(new Event("change"));
+        }
+      }
+    }
+  };
 
   useEffect(() => {
     const handleScroll = () => {
@@ -195,17 +286,38 @@ export default function Header() {
           </nav>
 
           <div className="hidden items-center space-x-4 lg:flex">
-            <Link
-              prefetch={false}
-              href="/login"
-              className="text-foreground font-medium transition-colors duration-200 hover:text-rose-600"
-            >
-              Language
-            </Link>
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button
+                  variant="ghost"
+                  className="text-foreground font-medium transition-colors duration-200 hover:text-rose-600 flex items-center space-x-2"
+                >
+                  <Globe className="h-4 w-4" />
+                  <span className="text-lg">{currentLanguage.flag}</span>
+                  <span>{currentLanguage.name}</span>
+                  <ChevronDown className="h-4 w-4" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="w-48">
+                {languages.map((language) => (
+                  <DropdownMenuItem
+                    key={language.code}
+                    onClick={() => changeLanguage(language)}
+                    className="flex items-center space-x-3 cursor-pointer"
+                  >
+                    <span className="text-lg">{language.flag}</span>
+                    <span>{language.name}</span>
+                    {currentLanguage.code === language.code && (
+                      <span className="ml-auto text-rose-600">✓</span>
+                    )}
+                  </DropdownMenuItem>
+                ))}
+              </DropdownMenuContent>
+            </DropdownMenu>
             <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
               <Link
                 prefetch={false}
-                href="/signup"
+                href="/explore"
                 className="inline-flex items-center space-x-2 rounded-full bg-gradient-to-r from-rose-600 to-rose-700 px-6 py-2.5 font-medium text-white transition-all duration-200 hover:shadow-lg"
               >
                 <span>Order Now</span>
@@ -250,17 +362,34 @@ export default function Header() {
                   </Link>
                 ))}
                 <div className="space-y-2 px-4 py-2">
+                  <div className="space-y-2">
+                    <div className="text-foreground text-sm font-medium px-2 py-1">
+                      Language
+                    </div>
+                    {languages.map((language) => (
+                      <button
+                        key={language.code}
+                        onClick={() => {
+                          changeLanguage(language);
+                          setIsMobileMenuOpen(false);
+                        }}
+                        className={`text-foreground hover:bg-muted flex items-center space-x-3 w-full rounded-lg px-3 py-2 text-left transition-colors duration-200 ${
+                          currentLanguage.code === language.code
+                            ? "bg-rose-50 dark:bg-rose-900/20"
+                            : ""
+                        }`}
+                      >
+                        <span className="text-lg">{language.flag}</span>
+                        <span>{language.name}</span>
+                        {currentLanguage.code === language.code && (
+                          <span className="ml-auto text-rose-600">✓</span>
+                        )}
+                      </button>
+                    ))}
+                  </div>
                   <Link
                     prefetch={false}
-                    href="/login"
-                    className="text-foreground hover:bg-muted block w-full rounded-lg py-2.5 text-center font-medium transition-colors duration-200"
-                    onClick={() => setIsMobileMenuOpen(false)}
-                  >
-                    Language
-                  </Link>
-                  <Link
-                    prefetch={false}
-                    href="/signup"
+                    href="/explore"
                     className="block w-full rounded-lg bg-gradient-to-r from-rose-500 to-rose-700 py-2.5 text-center font-medium text-white transition-all duration-200 hover:shadow-lg"
                     onClick={() => setIsMobileMenuOpen(false)}
                   >
@@ -272,6 +401,9 @@ export default function Header() {
           )}
         </AnimatePresence>
       </div>
+
+      {/* Hidden Google Translate Element */}
+      <div id="google_translate_element" style={{ display: "none" }}></div>
     </motion.header>
   );
 }

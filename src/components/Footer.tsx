@@ -30,7 +30,7 @@ const data = {
   help: {
     faqs: "/faqs",
     support: "/support",
-    contact: "/live-chat",
+    contact: "/contact",
   },
   contact: {
     email: "thegreatmoyibilliards760@gmail.com",
