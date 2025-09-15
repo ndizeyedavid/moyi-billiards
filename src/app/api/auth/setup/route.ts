@@ -1,36 +1,36 @@
-import { NextRequest, NextResponse } from 'next/server';
-import { prisma } from '@/lib/prisma';
-import { hashPassword } from '@/lib/auth';
+import { NextRequest, NextResponse } from "next/server";
+import { prisma } from "@/lib/prisma";
+import { hashPassword } from "@/lib/auth";
 
 export async function POST(request: NextRequest) {
   try {
     // Check if admin user already exists
     const existingAdmin = await prisma.user.findFirst({
-      where: { role: 'ADMIN' },
+      where: { role: "Admin" },
     });
 
     if (existingAdmin) {
       return NextResponse.json(
-        { error: 'Admin user already exists' },
+        { error: "Admin user already exists" },
         { status: 400 }
       );
     }
 
     // Create default admin user
-    const hashedPassword = await hashPassword('admin123');
-    
+    const hashedPassword = await hashPassword("admin123");
+
     const adminUser = await prisma.user.create({
       data: {
-        email: 'admin@moyibilliards.com',
-        name: 'Admin User',
+        email: "admin@moyibilliards.rw",
+        name: "Wilson Moyi",
         password: hashedPassword,
-        role: 'ADMIN',
+        role: "Admin",
       },
     });
 
     return NextResponse.json({
       success: true,
-      message: 'Admin user created successfully',
+      message: "Admin user created successfully",
       user: {
         id: adminUser.id,
         email: adminUser.email,
@@ -39,9 +39,9 @@ export async function POST(request: NextRequest) {
       },
     });
   } catch (error) {
-    console.error('Setup error:', error);
+    console.error("Setup error:", error);
     return NextResponse.json(
-      { error: 'Failed to create admin user' },
+      { error: "Failed to create admin user" },
       { status: 500 }
     );
   }
