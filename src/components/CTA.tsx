@@ -34,14 +34,13 @@ export default function CTA() {
           </div>
           <h3 className="text-[28px] font-semibold">One up the competition</h3>
           <p className="text-white/45 md:text-[17px] text-[15px]">
-            On top of the core Raycast Extensions already built in, you can
-            install Extensions built by Developers from the community.
-            Everything you&apos;ve asked for, in one place. Search and browse
-            Extensions for your tools, actions and more.
+            At Moyi Billiards, we provide top-quality tables, gear, and expert
+            services to help you stay ahead of the competition. Elevate your
+            game with us.
           </p>
         </div>
 
-        <div className="w-[600px] h-[500px]">
+        <div className="w-full">
           <Slideshow />
         </div>
       </div>

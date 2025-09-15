@@ -249,9 +249,9 @@ export default function AboutUs() {
               <h2 className="text-2xl font-bold tracking-tight">Our Legacy</h2>
 
               <p className="text-muted-foreground text-base leading-relaxed">
-                Since 2020, we&apos;ve revolutionized the billiards industry through
-                innovation and craftsmanship. Each table tells a story of
-                precision, passion, and perfection.
+                Since 2020, we&apos;ve revolutionized the billiards industry
+                through innovation and craftsmanship. Each table tells a story
+                of precision, passion, and perfection.
               </p>
             </motion.div>
           </div>
@@ -266,10 +266,11 @@ export default function AboutUs() {
               <Building className="h-5 w-5" />
             </div>
             <p className="text-muted-foreground text-base leading-relaxed">
-              We are a passionate team of experts dedicated to delivering
-              exceptional solutions that help businesses thrive in the digital
-              landscape. Our commitment to innovation and quality has made us a
-              trusted partner for organizations worldwide.
+              We are a passionate team of billiard experts dedicated to
+              delivering premium tables, accessories, and services that help
+              players elevate their game. Our commitment to quality and
+              innovation has made us a trusted partner for billiard enthusiasts
+              nationwide
             </p>
           </motion.div>
         </div>

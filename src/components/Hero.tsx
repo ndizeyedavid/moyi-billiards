@@ -6,6 +6,7 @@ import { ArrowRight } from "lucide-react";
 import { Pacifico } from "next/font/google";
 import { cn } from "@/lib/utils";
 import Image from "next/image";
+import Link from "next/link";
 
 const pacifico = Pacifico({
   subsets: ["latin"],
@@ -162,7 +163,13 @@ export default function Hero({
             animate="visible"
             className="border-primary/30 bg-card/50 mb-8 inline-flex items-center gap-2 rounded-full border px-4 py-1.5 shadow-sm backdrop-blur-sm md:mb-12"
           >
-            <Image src="/thumb.png" alt="logo" width={24} height={24} className="h-6 w-6" />
+            <Image
+              src="/thumb.png"
+              alt="logo"
+              width={24}
+              height={24}
+              className="h-6 w-6"
+            />
             <span className="text-foreground text-sm font-medium tracking-wide">
               {badge}
             </span>
@@ -216,20 +223,24 @@ export default function Hero({
             animate="visible"
             className="flex flex-col justify-center gap-4 sm:flex-row"
           >
-            <Button
-              size="lg"
-              className="from-primary shadow-primary/10 hover:from-primary/90 rounded-full border-none bg-gradient-to-r to-primary shadow-md hover:to-primary/90"
-            >
-              Order Now
-              <ArrowRight className="ml-2 h-4 w-4" />
-            </Button>
-            <Button
-              size="lg"
-              variant="outline"
-              className="border-primary/30 hover:bg-primary/5 rounded-full shadow-sm"
-            >
-              Contact Us
-            </Button>
+            <Link href="/explore">
+              <Button
+                size="lg"
+                className="from-primary shadow-primary/10 hover:from-primary/90 rounded-full border-none bg-gradient-to-r to-primary shadow-md hover:to-primary/90"
+              >
+                Order Now
+                <ArrowRight className="ml-2 h-4 w-4" />
+              </Button>
+            </Link>
+            <Link href="/contact">
+              <Button
+                size="lg"
+                variant="outline"
+                className="border-primary/30 hover:bg-primary/5 rounded-full shadow-sm"
+              >
+                Contact Us
+              </Button>
+            </Link>
           </motion.div>
         </div>
       </div>

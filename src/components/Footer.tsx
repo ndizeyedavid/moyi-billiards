@@ -206,7 +206,17 @@ export default function Footer() {
         <div className="mt-12 border-t pt-6">
           <div className="text-center sm:flex sm:justify-between sm:text-left">
             <p className="text-sm">
-              <span className="block sm:inline">All rights reserved.</span>
+              <span className="block sm:inline">
+                A product by{" "}
+                <Link
+                  href="https://lerony.com/"
+                  target="_blank"
+                  className="hover:text-rose-600 underline"
+                >
+                  Lerony Co
+                </Link>
+                . All rights reserved.
+              </span>
             </p>
 
             <p className="text-secondary-foreground/70 mt-4 text-sm transition sm:order-first sm:mt-0">
