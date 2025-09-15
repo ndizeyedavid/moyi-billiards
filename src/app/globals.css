@@ -125,3 +125,13 @@
   text-shadow: 0 0 20px #833339;
   @apply p-[2px] rounded bg-white/10 text-[#ffe2e2];
 }
+
+.spin {
+  animation: spin 5s linear infinite;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}

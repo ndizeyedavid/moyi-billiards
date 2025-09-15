@@ -16,6 +16,7 @@ import {
 } from "@/components/ui/card";
 
 import { cn } from "@/lib/utils";
+import Link from "next/link";
 
 export default function ProductCard() {
   const [liked, setLiked] = useState<boolean>(false);
@@ -52,7 +53,9 @@ export default function ProductCard() {
             <span className="text-sm font-medium uppercase">Price</span>
             <span className="text-xl font-semibold">69,000,000 RWF</span>
           </div>
-          <Button size="lg">More Details</Button>
+          <Link href={"/explore/2"}>
+            <Button size="lg">More Details</Button>
+          </Link>
         </CardFooter>
       </Card>
     </div>
