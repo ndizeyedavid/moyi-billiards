@@ -1,92 +1,93 @@
-import { NextRequest, NextResponse } from 'next/server'
-import { prisma } from '@/lib/prisma'
-import { productSchema } from '@/lib/validations'
+import { NextRequest, NextResponse } from "next/server";
+import { prisma } from "@/lib/prisma";
+import { productSchema } from "@/lib/validations";
 
 // GET /api/products/[id] - Get a single product
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const { id } = await params;
     const product = await prisma.product.findUnique({
-      where: { id: params.id },
-    })
+      where: { id },
+    });
 
     if (!product) {
-      return NextResponse.json(
-        { error: 'Product not found' },
-        { status: 404 }
-      )
+      return NextResponse.json({ error: "Product not found" }, { status: 404 });
     }
 
-    return NextResponse.json(product)
+    return NextResponse.json(product);
   } catch (error) {
-    console.error('Error fetching product:', error)
+    console.error("Error fetching product:", error);
     return NextResponse.json(
-      { error: 'Failed to fetch product' },
+      { error: "Failed to fetch product" },
       { status: 500 }
-    )
+    );
   }
 }
 
 // PUT /api/products/[id] - Update a product
 export async function PUT(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const body = await request.json()
-    
+    const { id } = await params;
+    const body = await request.json();
+
     // Validate input
-    const validatedData = productSchema.parse(body)
+    const validatedData = productSchema.parse(body);
 
     const product = await prisma.product.update({
-      where: { id: params.id },
+      where: { id },
+      // @ts-ignore
       data: validatedData,
-    })
+    });
 
-    return NextResponse.json(product)
+    return NextResponse.json(product);
   } catch (error) {
-    console.error('Error updating product:', error)
-    
-    if (error instanceof Error && error.message.includes('Record to update not found')) {
-      return NextResponse.json(
-        { error: 'Product not found' },
-        { status: 404 }
-      )
+    console.error("Error updating product:", error);
+
+    if (
+      error instanceof Error &&
+      error.message.includes("Record to update not found")
+    ) {
+      return NextResponse.json({ error: "Product not found" }, { status: 404 });
     }
 
     return NextResponse.json(
-      { error: 'Failed to update product' },
+      { error: "Failed to update product" },
       { status: 500 }
-    )
+    );
   }
 }
 
 // DELETE /api/products/[id] - Delete a product
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const { id } = await params;
     await prisma.product.delete({
-      where: { id: params.id },
-    })
+      where: { id },
+    });
 
-    return NextResponse.json({ message: 'Product deleted successfully' })
+    return NextResponse.json({ message: "Product deleted successfully" });
   } catch (error) {
-    console.error('Error deleting product:', error)
-    
-    if (error instanceof Error && error.message.includes('Record to delete does not exist')) {
-      return NextResponse.json(
-        { error: 'Product not found' },
-        { status: 404 }
-      )
+    console.error("Error deleting product:", error);
+
+    if (
+      error instanceof Error &&
+      error.message.includes("Record to delete does not exist")
+    ) {
+      return NextResponse.json({ error: "Product not found" }, { status: 404 });
     }
 
     return NextResponse.json(
-      { error: 'Failed to delete product' },
+      { error: "Failed to delete product" },
       { status: 500 }
-    )
+    );
   }
 }

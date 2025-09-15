@@ -5,11 +5,12 @@ import { contactSchema } from '@/lib/validations'
 // GET /api/contacts/[id] - Get a single contact with replies
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const { id } = await params;
     const contact = await prisma.contact.findUnique({
-      where: { id: params.id },
+      where: { id },
       include: {
         replies: {
           orderBy: { createdAt: 'desc' },
@@ -37,16 +38,17 @@ export async function GET(
 // PUT /api/contacts/[id] - Update a contact (status, priority, etc.)
 export async function PUT(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const { id } = await params;
     const body = await request.json()
     
     // Validate input (partial update allowed)
     const validatedData = contactSchema.partial().parse(body)
 
     const contact = await prisma.contact.update({
-      where: { id: params.id },
+      where: { id },
       data: validatedData,
     })
 
@@ -71,11 +73,12 @@ export async function PUT(
 // DELETE /api/contacts/[id] - Delete a contact
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const { id } = await params;
     await prisma.contact.delete({
-      where: { id: params.id },
+      where: { id },
     })
 
     return NextResponse.json({ message: 'Contact deleted successfully' })

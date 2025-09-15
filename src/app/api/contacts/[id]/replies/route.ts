@@ -5,11 +5,12 @@ import { contactReplySchema } from '@/lib/validations'
 // GET /api/contacts/[id]/replies - Get all replies for a contact
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const { id } = await params;
     const replies = await prisma.contactReply.findMany({
-      where: { contactId: params.id },
+      where: { contactId: id },
       orderBy: { createdAt: 'desc' },
     })
 
@@ -26,15 +27,16 @@ export async function GET(
 // POST /api/contacts/[id]/replies - Create a new reply to a contact
 export async function POST(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const { id } = await params;
     const body = await request.json()
     
     // Validate input
     const validatedData = contactReplySchema.parse({
       ...body,
-      contactId: params.id,
+      contactId: id,
     })
 
     // Create the reply
@@ -44,7 +46,7 @@ export async function POST(
 
     // Update contact status to "Replied" if it was "New" or "In Progress"
     await prisma.contact.update({
-      where: { id: params.id },
+      where: { id },
       data: { 
         status: 'Replied',
         updatedAt: new Date(),
