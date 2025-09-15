@@ -18,6 +18,7 @@ import {
   Settings,
   BarChart3,
   Loader2,
+  AlertCircle,
 } from "lucide-react";
 import Link from "next/link";
 import Image from "next/image";
@@ -34,6 +35,7 @@ import {
   getRecentContacts,
 } from "@/lib/actions/dashboard";
 import { useEffect, useState } from "react";
+import { toast } from "sonner";
 
 export default function DashboardPage() {
   const [searchQuery, setSearchQuery] = useState("");
@@ -42,11 +44,14 @@ export default function DashboardPage() {
   const [recentPosts, setRecentPosts] = useState<any[]>([]);
   const [recentContacts, setRecentContacts] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     const fetchDashboardData = async () => {
       try {
         setLoading(true);
+        setError(null);
+        
         const [stats, products, posts, contacts] = await Promise.all([
           getDashboardStats(),
           getRecentProducts(3),
@@ -60,6 +65,8 @@ export default function DashboardPage() {
         setRecentContacts(contacts);
       } catch (error) {
         console.error("Error fetching dashboard data:", error);
+        setError("Failed to load dashboard data. Please try again.");
+        toast.error("Failed to load dashboard data");
       } finally {
         setLoading(false);
       }
@@ -74,6 +81,7 @@ export default function DashboardPage() {
           title: "Total Products",
           value: dashboardData.totalProducts.toString(),
           change: `${dashboardData.activePosts} active`,
+          trend: "up",
           icon: ShoppingBag,
           color: "text-blue-600",
           bgColor: "bg-blue-100 dark:bg-blue-900/20",
@@ -82,6 +90,7 @@ export default function DashboardPage() {
           title: "Blog Posts",
           value: dashboardData.totalBlogPosts.toString(),
           change: `${dashboardData.publishedPosts} published`,
+          trend: "up",
           icon: FileText,
           color: "text-green-600",
           bgColor: "bg-green-100 dark:bg-green-900/20",
@@ -90,6 +99,7 @@ export default function DashboardPage() {
           title: "Contact Forms",
           value: dashboardData.totalContacts.toString(),
           change: `${dashboardData.newContacts} new`,
+          trend: dashboardData.newContacts > 0 ? "up" : "neutral",
           icon: MessageSquare,
           color: "text-orange-600",
           bgColor: "bg-orange-100 dark:bg-orange-900/20",
@@ -98,12 +108,32 @@ export default function DashboardPage() {
           title: "Team Members",
           value: dashboardData.totalTeamMembers.toString(),
           change: "Active team",
+          trend: "neutral",
           icon: Users,
           color: "text-purple-600",
           bgColor: "bg-purple-100 dark:bg-purple-900/20",
         },
       ]
     : [];
+
+  if (error) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <Card className="w-full max-w-md">
+          <CardContent className="p-6 text-center">
+            <div className="text-red-500 mb-4">
+              <AlertCircle className="h-12 w-12 mx-auto" />
+            </div>
+            <h3 className="text-lg font-semibold mb-2">Error Loading Dashboard</h3>
+            <p className="text-muted-foreground mb-4">{error}</p>
+            <Button onClick={() => window.location.reload()}>
+              Try Again
+            </Button>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-background">
@@ -175,10 +205,12 @@ export default function DashboardPage() {
               <Card>
                 <CardHeader className="flex flex-row items-center justify-between">
                   <CardTitle>Product Management</CardTitle>
-                  <Button className="gap-2">
-                    <Plus className="h-4 w-4" />
-                    Add Product
-                  </Button>
+                  <Link href="/admin/dashboard/products/new">
+                    <Button className="gap-2">
+                      <Plus className="h-4 w-4" />
+                      Add Product
+                    </Button>
+                  </Link>
                 </CardHeader>
                 <CardContent>
                   <div className="space-y-4">
@@ -275,10 +307,12 @@ export default function DashboardPage() {
               <Card>
                 <CardHeader className="flex flex-row items-center justify-between">
                   <CardTitle>Blog Post Management</CardTitle>
-                  <Button className="gap-2">
-                    <Plus className="h-4 w-4" />
-                    New Post
-                  </Button>
+                  <Link href="/admin/dashboard/posts/new">
+                    <Button className="gap-2">
+                      <Plus className="h-4 w-4" />
+                      New Post
+                    </Button>
+                  </Link>
                 </CardHeader>
                 <CardContent>
                   <div className="space-y-4">

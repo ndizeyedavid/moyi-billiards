@@ -61,10 +61,10 @@ export async function getRecentProducts(limit: number = 5) {
   }
 }
 
-export async function getRecentBlogPosts() {
+export async function getRecentBlogPosts(limit: number = 5) {
   try {
     const blogPosts = await prisma.blogPost.findMany({
-      take: 5,
+      take: limit,
       orderBy: { createdAt: 'desc' },
       select: {
         id: true,
@@ -72,7 +72,9 @@ export async function getRecentBlogPosts() {
         slug: true,
         status: true,
         createdAt: true,
-        author: true
+        publishedAt: true,
+        author: true,
+        readTime: true
       }
     });
 
