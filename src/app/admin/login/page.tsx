@@ -4,6 +4,8 @@ import { useState } from "react";
 import { motion } from "framer-motion";
 import { Eye, EyeOff, Lock, Mail, ArrowRight } from "lucide-react";
 import Image from "next/image";
+import { useRouter } from "next/navigation";
+import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -17,22 +19,40 @@ export default function LoginPage() {
     password: "",
   });
   const [isLoading, setIsLoading] = useState(false);
+  const router = useRouter();
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
-    setFormData(prev => ({ ...prev, [name]: value }));
+    setFormData((prev) => ({ ...prev, [name]: value }));
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
-    
-    // Simulate login process
-    setTimeout(() => {
+
+    try {
+      const response = await fetch("/api/auth/login", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(formData),
+      });
+
+      const data = await response.json();
+
+      if (response.ok) {
+        toast.success("Login successful!");
+        router.push("/admin/dashboard");
+      } else {
+        toast.error(data.error || "Login failed");
+      }
+    } catch (error) {
+      console.error("Login error:", error);
+      toast.error("An error occurred during login");
+    } finally {
       setIsLoading(false);
-      // Redirect to dashboard
-      window.location.href = "/dashboard";
-    }, 2000);
+    }
   };
 
   return (
@@ -134,17 +154,6 @@ export default function LoginPage() {
                   )}
                 </Button>
               </form>
-
-              {/* Demo Credentials */}
-              <div className="mt-6 p-4 bg-muted rounded-lg">
-                <p className="text-sm font-medium mb-2">Demo Credentials:</p>
-                <p className="text-xs text-muted-foreground">
-                  Email: admin@moyibilliards.com
-                </p>
-                <p className="text-xs text-muted-foreground">
-                  Password: admin123
-                </p>
-              </div>
             </CardContent>
           </Card>
 

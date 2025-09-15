@@ -5,17 +5,18 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { motion } from "framer-motion";
 import {
-  BarChart3,
-  Users,
+  LayoutDashboard,
   ShoppingBag,
   FileText,
   MessageSquare,
+  Users,
   Settings,
-  Bell,
-  Search,
+  LogOut,
   Menu,
   X,
-  LogOut,
+  Bell,
+  Search,
+  BarChart3,
   User,
 } from "lucide-react";
 import Image from "next/image";
@@ -23,6 +24,10 @@ import Image from "next/image";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
+import { AuthProvider } from "@/components/AuthProvider";
+import { ProtectedRoute } from "@/components/ProtectedRoute";
+import { useAuth } from "@/components/AuthProvider";
+
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -64,7 +69,7 @@ const navigationItems = [
   // },
 ];
 
-export default function DashboardLayout({
+function DashboardContent({
   children,
 }: {
   children: React.ReactNode;
@@ -72,10 +77,10 @@ export default function DashboardLayout({
   const [searchQuery, setSearchQuery] = useState("");
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const pathname = usePathname();
+  const { logout, user } = useAuth();
 
-  const handleLogout = () => {
-    // Handle logout logic
-    window.location.href = "/admin/login";
+  const handleLogout = async () => {
+    await logout();
   };
 
   return (
@@ -134,6 +139,13 @@ export default function DashboardLayout({
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end">
+                <div className="px-2 py-1.5 text-sm font-medium">
+                  {user?.name || 'Admin'}
+                </div>
+                <div className="px-2 py-1.5 text-xs text-muted-foreground">
+                  {user?.email}
+                </div>
+                <DropdownMenuSeparator />
                 <DropdownMenuItem>
                   <User className="h-4 w-4 mr-2" />
                   Profile
@@ -224,5 +236,19 @@ export default function DashboardLayout({
         </main>
       </div>
     </div>
+  );
+}
+
+export default function DashboardLayout({
+  children,
+}: {
+  children: React.ReactNode;
+}) {
+  return (
+    <AuthProvider>
+      <ProtectedRoute>
+        <DashboardContent>{children}</DashboardContent>
+      </ProtectedRoute>
+    </AuthProvider>
   );
 }
