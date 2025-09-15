@@ -22,13 +22,16 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
+  DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import BlogPostForm from "@/components/forms/BlogPostForm";
+
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 // Mock data for blog posts
 const blogPosts = [
@@ -136,19 +139,41 @@ const postStats = [
   },
 ];
 
-export default function BlogPostsPage() {
+export default function PostsPage() {
   const [searchQuery, setSearchQuery] = useState("");
-  const [selectedCategory, setSelectedCategory] = useState("All");
-  const [selectedStatus, setSelectedStatus] = useState("All");
+  const [filterStatus, setFilterStatus] = useState("All");
+  const [filterCategory, setFilterCategory] = useState("All");
+  const [isBlogPostFormOpen, setIsBlogPostFormOpen] = useState(false);
+  const [editingPost, setEditingPost] = useState<any>(null);
 
   const filteredPosts = blogPosts.filter((post) => {
     const matchesSearch = post.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
                          post.excerpt.toLowerCase().includes(searchQuery.toLowerCase());
-    const matchesCategory = selectedCategory === "All" || post.category === selectedCategory;
-    const matchesStatus = selectedStatus === "All" || post.status === selectedStatus;
+    const matchesCategory = filterCategory === "All" || post.category === filterCategory;
+    const matchesStatus = filterStatus === "All" || post.status === filterStatus;
     
     return matchesSearch && matchesCategory && matchesStatus;
   });
+
+  const handleAddPost = () => {
+    setEditingPost(null);
+    setIsBlogPostFormOpen(true);
+  };
+
+  const handleEditPost = (post: any) => {
+    setEditingPost(post);
+    setIsBlogPostFormOpen(true);
+  };
+
+  const handleSavePost = (postData: any) => {
+    if (editingPost) {
+      console.log('Update post:', postData);
+    } else {
+      console.log('Add new post:', postData);
+    }
+    setIsBlogPostFormOpen(false);
+    setEditingPost(null);
+  };
 
   const getStatusColor = (status: string) => {
     switch (status) {
@@ -173,7 +198,7 @@ export default function BlogPostsPage() {
             Manage your blog content and articles
           </p>
         </div>
-        <Button className="gap-2">
+        <Button className="gap-2" onClick={handleAddPost}>
           <Plus className="h-4 w-4" />
           New Post
         </Button>
@@ -228,14 +253,14 @@ export default function BlogPostsPage() {
               <DropdownMenuTrigger asChild>
                 <Button variant="outline" className="gap-2">
                   <Filter className="h-4 w-4" />
-                  Category: {selectedCategory}
+                  Category: {filterCategory}
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent>
                 {categories.map((category) => (
                   <DropdownMenuItem
                     key={category}
-                    onClick={() => setSelectedCategory(category)}
+                    onClick={() => setFilterCategory(category)}
                   >
                     {category}
                   </DropdownMenuItem>
@@ -247,14 +272,14 @@ export default function BlogPostsPage() {
               <DropdownMenuTrigger asChild>
                 <Button variant="outline" className="gap-2">
                   <Filter className="h-4 w-4" />
-                  Status: {selectedStatus}
+                  Status: {filterStatus}
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent>
                 {["All", "Published", "Draft", "Scheduled"].map((status) => (
                   <DropdownMenuItem
                     key={status}
-                    onClick={() => setSelectedStatus(status)}
+                    onClick={() => setFilterStatus(status)}
                   >
                     {status}
                   </DropdownMenuItem>
@@ -326,7 +351,7 @@ export default function BlogPostsPage() {
                     <Button variant="ghost" size="icon" className="h-8 w-8">
                       <Eye className="h-4 w-4" />
                     </Button>
-                    <Button variant="ghost" size="icon" className="h-8 w-8">
+                    <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => handleEditPost(post)}>
                       <Edit className="h-4 w-4" />
                     </Button>
                     <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive hover:text-destructive">
@@ -339,6 +364,17 @@ export default function BlogPostsPage() {
           </div>
         </CardContent>
       </Card>
+
+      {/* Blog Post Form Modal */}
+      <BlogPostForm
+        isOpen={isBlogPostFormOpen}
+        onClose={() => {
+          setIsBlogPostFormOpen(false);
+          setEditingPost(null);
+        }}
+        onSave={handleSavePost}
+        post={editingPost}
+      />
     </div>
   );
 }

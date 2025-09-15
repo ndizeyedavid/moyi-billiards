@@ -81,7 +81,7 @@ export default function DashboardLayout({
   return (
     <div className="min-h-screen bg-background">
       {/* Header */}
-      <header className="border-b bg-card/50 backdrop-blur-sm sticky top-0 z-40">
+      <header className="border-b bg-card/50 backdrop-blur-sm top-0 z-40">
         <div className="flex h-16 items-center justify-between px-6">
           <div className="flex items-center gap-4">
             <Button
@@ -92,7 +92,7 @@ export default function DashboardLayout({
             >
               <Menu className="h-5 w-5" />
             </Button>
-            
+
             <div className="flex items-center gap-3">
               <Image
                 src="/logo.png"
@@ -109,22 +109,24 @@ export default function DashboardLayout({
               </div>
             </div>
           </div>
-          
+
           <div className="flex items-center gap-4">
             <div className="relative hidden md:block">
               <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
               <Input
                 placeholder="Search..."
                 value={searchQuery}
-                onChange={(e: React.ChangeEvent<HTMLInputElement>) => setSearchQuery(e.target.value)}
+                onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
+                  setSearchQuery(e.target.value)
+                }
                 className="w-64 pl-10"
               />
             </div>
-            
+
             <Button variant="outline" size="icon">
               <Bell className="h-4 w-4" />
             </Button>
-            
+
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <Button variant="outline" size="icon">

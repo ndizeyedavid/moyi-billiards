@@ -31,6 +31,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import ProductForm from "@/components/forms/ProductForm";
 
 // Mock product data
 const products = [
@@ -138,6 +139,8 @@ export default function ProductsPage() {
   const [searchQuery, setSearchQuery] = useState("");
   const [filterStatus, setFilterStatus] = useState("All");
   const [filterCategory, setFilterCategory] = useState("All");
+  const [isProductFormOpen, setIsProductFormOpen] = useState(false);
+  const [editingProduct, setEditingProduct] = useState<any>(null);
 
   const filteredProducts = products.filter((product) => {
     const matchesSearch = product.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -149,6 +152,28 @@ export default function ProductsPage() {
 
   const formatPrice = (price: number, currency: string) => {
     return new Intl.NumberFormat('en-RW').format(price) + ' ' + currency;
+  };
+
+  const handleAddProduct = () => {
+    setEditingProduct(null);
+    setIsProductFormOpen(true);
+  };
+
+  const handleEditProduct = (product: any) => {
+    setEditingProduct(product);
+    setIsProductFormOpen(true);
+  };
+
+  const handleSaveProduct = (productData: any) => {
+    if (editingProduct) {
+      // Update existing product
+      console.log('Update product:', productData);
+    } else {
+      // Add new product
+      console.log('Add new product:', productData);
+    }
+    setIsProductFormOpen(false);
+    setEditingProduct(null);
   };
 
   const handleDeleteProduct = (productId: number) => {
@@ -181,7 +206,7 @@ export default function ProductsPage() {
             <Archive className="h-4 w-4" />
             Bulk Actions
           </Button>
-          <Button className="gap-2">
+          <Button className="gap-2" onClick={handleAddProduct}>
             <Plus className="h-4 w-4" />
             Add New Product
           </Button>
@@ -329,9 +354,9 @@ export default function ProductsPage() {
                         <Eye className="h-4 w-4 mr-2" />
                         View Details
                       </DropdownMenuItem>
-                      <DropdownMenuItem>
+                      <DropdownMenuItem onClick={() => handleEditProduct(product)}>
                         <Edit className="h-4 w-4 mr-2" />
-                        Edit Product
+                        Edit
                       </DropdownMenuItem>
                       <DropdownMenuItem onClick={() => handleDuplicateProduct(product.id)}>
                         <Copy className="h-4 w-4 mr-2" />
@@ -412,12 +437,26 @@ export default function ProductsPage() {
               ? "Try adjusting your search or filters"
               : "Get started by adding your first product"}
           </p>
-          <Button className="gap-2">
-            <Plus className="h-4 w-4" />
+          <Button 
+            className="bg-blue-600 hover:bg-blue-700"
+            onClick={handleAddProduct}
+          >
+            <Plus className="h-4 w-4 mr-2" />
             Add Product
           </Button>
         </Card>
       )}
+
+      {/* Product Form Modal */}
+      <ProductForm
+        isOpen={isProductFormOpen}
+        onClose={() => {
+          setIsProductFormOpen(false);
+          setEditingProduct(null);
+        }}
+        onSave={handleSaveProduct}
+        product={editingProduct}
+      />
     </div>
   );
 }

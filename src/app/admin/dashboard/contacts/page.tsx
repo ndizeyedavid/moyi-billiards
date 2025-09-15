@@ -23,13 +23,16 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
+  DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import ContactReplyForm from "@/components/forms/ContactReplyForm";
+
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 // Mock data for contact forms
 const contactForms = [
@@ -144,11 +147,13 @@ const categories = ["All", "Sales Inquiry", "Service Request", "Installation", "
 const statuses = ["All", "New", "In Progress", "Replied", "Closed"];
 const priorities = ["All", "High", "Medium", "Low"];
 
-export default function ContactFormsPage() {
+export default function ContactsPage() {
   const [searchQuery, setSearchQuery] = useState("");
-  const [selectedCategory, setSelectedCategory] = useState("All");
-  const [selectedStatus, setSelectedStatus] = useState("All");
-  const [selectedPriority, setSelectedPriority] = useState("All");
+  const [filterCategory, setFilterCategory] = useState("All");
+  const [filterStatus, setFilterStatus] = useState("All");
+  const [filterPriority, setFilterPriority] = useState("All");
+  const [isContactReplyFormOpen, setIsContactReplyFormOpen] = useState(false);
+  const [replyingToContact, setReplyingToContact] = useState<any>(null);
 
   const filteredContacts = contactForms.filter((contact) => {
     const matchesSearch = 
@@ -157,12 +162,23 @@ export default function ContactFormsPage() {
       contact.subject.toLowerCase().includes(searchQuery.toLowerCase()) ||
       contact.message.toLowerCase().includes(searchQuery.toLowerCase());
     
-    const matchesCategory = selectedCategory === "All" || contact.category === selectedCategory;
-    const matchesStatus = selectedStatus === "All" || contact.status === selectedStatus;
-    const matchesPriority = selectedPriority === "All" || contact.priority === selectedPriority;
+    const matchesCategory = filterCategory === "All" || contact.category === filterCategory;
+    const matchesStatus = filterStatus === "All" || contact.status === filterStatus;
+    const matchesPriority = filterPriority === "All" || contact.priority === filterPriority;
     
     return matchesSearch && matchesCategory && matchesStatus && matchesPriority;
   });
+
+  const handleReplyToContact = (contact: any) => {
+    setReplyingToContact(contact);
+    setIsContactReplyFormOpen(true);
+  };
+
+  const handleSendReply = (replyData: any) => {
+    console.log('Send reply:', replyData);
+    setIsContactReplyFormOpen(false);
+    setReplyingToContact(null);
+  };
 
   const getStatusColor = (status: string) => {
     switch (status) {
@@ -264,14 +280,14 @@ export default function ContactFormsPage() {
                 <DropdownMenuTrigger asChild>
                   <Button variant="outline" className="gap-2">
                     <Filter className="h-4 w-4" />
-                    Category: {selectedCategory}
+                    Category: {filterCategory}
                   </Button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent>
                   {categories.map((category) => (
                     <DropdownMenuItem
                       key={category}
-                      onClick={() => setSelectedCategory(category)}
+                      onClick={() => setFilterCategory(category)}
                     >
                       {category}
                     </DropdownMenuItem>
@@ -283,14 +299,14 @@ export default function ContactFormsPage() {
                 <DropdownMenuTrigger asChild>
                   <Button variant="outline" className="gap-2">
                     <Filter className="h-4 w-4" />
-                    Status: {selectedStatus}
+                    Status: {filterStatus}
                   </Button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent>
                   {statuses.map((status) => (
                     <DropdownMenuItem
                       key={status}
-                      onClick={() => setSelectedStatus(status)}
+                      onClick={() => setFilterStatus(status)}
                     >
                       {status}
                     </DropdownMenuItem>
@@ -302,14 +318,14 @@ export default function ContactFormsPage() {
                 <DropdownMenuTrigger asChild>
                   <Button variant="outline" className="gap-2">
                     <AlertCircle className="h-4 w-4" />
-                    Priority: {selectedPriority}
+                    Priority: {filterPriority}
                   </Button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent>
                   {priorities.map((priority) => (
                     <DropdownMenuItem
                       key={priority}
-                      onClick={() => setSelectedPriority(priority)}
+                      onClick={() => setFilterPriority(priority)}
                     >
                       {priority}
                     </DropdownMenuItem>
@@ -385,7 +401,7 @@ export default function ContactFormsPage() {
                   <Button variant="ghost" size="icon" className="h-8 w-8">
                     <Eye className="h-4 w-4" />
                   </Button>
-                  <Button variant="ghost" size="icon" className="h-8 w-8">
+                  <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => handleReplyToContact(contact)}>
                     <Reply className="h-4 w-4" />
                   </Button>
                   <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive hover:text-destructive">
@@ -397,6 +413,17 @@ export default function ContactFormsPage() {
           </div>
         </CardContent>
       </Card>
+
+      {/* Contact Reply Form Modal */}
+      <ContactReplyForm
+        isOpen={isContactReplyFormOpen}
+        onClose={() => {
+          setIsContactReplyFormOpen(false);
+          setReplyingToContact(null);
+        }}
+        onSend={handleSendReply}
+        contact={replyingToContact}
+      />
     </div>
   );
 }

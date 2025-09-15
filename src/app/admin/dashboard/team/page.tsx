@@ -24,12 +24,15 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
+  DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import TeamMemberForm from "@/components/forms/TeamMemberForm";
 
 // Mock data for team members
 const teamMembers = [
@@ -170,10 +173,12 @@ const departments = ["All", "Leadership", "Sales", "Manufacturing", "Marketing",
 const roles = ["All", "CEO & Founder", "Sales Manager", "Production Manager", "Marketing Specialist", "Installation Technician", "Customer Service Rep"];
 const statuses = ["All", "Active", "On Leave", "Inactive"];
 
-export default function TeamMembersPage() {
+export default function TeamPage() {
   const [searchQuery, setSearchQuery] = useState("");
-  const [selectedDepartment, setSelectedDepartment] = useState("All");
-  const [selectedRole, setSelectedRole] = useState("All");
+  const [filterDepartment, setFilterDepartment] = useState("All");
+  const [filterRole, setFilterRole] = useState("All");
+  const [isTeamMemberFormOpen, setIsTeamMemberFormOpen] = useState(false);
+  const [editingMember, setEditingMember] = useState<any>(null);
   const [selectedStatus, setSelectedStatus] = useState("All");
 
   const filteredMembers = teamMembers.filter((member) => {
@@ -182,12 +187,32 @@ export default function TeamMembersPage() {
       member.email.toLowerCase().includes(searchQuery.toLowerCase()) ||
       member.role.toLowerCase().includes(searchQuery.toLowerCase());
     
-    const matchesDepartment = selectedDepartment === "All" || member.department === selectedDepartment;
-    const matchesRole = selectedRole === "All" || member.role === selectedRole;
+    const matchesDepartment = filterDepartment === "All" || member.department === filterDepartment;
+    const matchesRole = filterRole === "All" || member.role === filterRole;
     const matchesStatus = selectedStatus === "All" || member.status === selectedStatus;
     
     return matchesSearch && matchesDepartment && matchesRole && matchesStatus;
   });
+
+  const handleAddMember = () => {
+    setEditingMember(null);
+    setIsTeamMemberFormOpen(true);
+  };
+
+  const handleEditMember = (member: any) => {
+    setEditingMember(member);
+    setIsTeamMemberFormOpen(true);
+  };
+
+  const handleSaveMember = (memberData: any) => {
+    if (editingMember) {
+      console.log('Update member:', memberData);
+    } else {
+      console.log('Add new member:', memberData);
+    }
+    setIsTeamMemberFormOpen(false);
+    setEditingMember(null);
+  };
 
   const getStatusColor = (status: string) => {
     switch (status) {
@@ -218,7 +243,7 @@ export default function TeamMembersPage() {
             Manage your team and organizational structure
           </p>
         </div>
-        <Button className="gap-2">
+        <Button className="gap-2" onClick={handleAddMember}>
           <Plus className="h-4 w-4" />
           Add Member
         </Button>
@@ -274,14 +299,14 @@ export default function TeamMembersPage() {
                 <DropdownMenuTrigger asChild>
                   <Button variant="outline" className="gap-2">
                     <Filter className="h-4 w-4" />
-                    Department: {selectedDepartment}
+                    Department: {filterDepartment}
                   </Button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent>
                   {departments.map((department) => (
                     <DropdownMenuItem
                       key={department}
-                      onClick={() => setSelectedDepartment(department)}
+                      onClick={() => setFilterDepartment(department)}
                     >
                       {department}
                     </DropdownMenuItem>
@@ -408,7 +433,7 @@ export default function TeamMembersPage() {
                   </div>
 
                   <div className="flex items-center gap-2 mt-4 pt-4 border-t">
-                    <Button variant="outline" size="sm" className="flex-1">
+                    <Button variant="outline" size="sm" className="flex-1" onClick={() => handleEditMember(member)}>
                       <Edit className="h-4 w-4 mr-1" />
                       Edit
                     </Button>
@@ -422,6 +447,17 @@ export default function TeamMembersPage() {
           );
         })}
       </div>
+
+      {/* Team Member Form Modal */}
+      <TeamMemberForm
+        isOpen={isTeamMemberFormOpen}
+        onClose={() => {
+          setIsTeamMemberFormOpen(false);
+          setEditingMember(null);
+        }}
+        onSave={handleSaveMember}
+        member={editingMember}
+      />
     </div>
   );
 }
