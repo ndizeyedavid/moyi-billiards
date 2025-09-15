@@ -28,12 +28,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Input } from "@/components/ui/input";
-import {
-  getDashboardStats,
-  getRecentProducts,
-  getRecentBlogPosts,
-  getRecentContacts,
-} from "@/lib/actions/dashboard";
+// Removed server-side imports to fix Prisma browser error
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
 
@@ -51,12 +46,29 @@ export default function DashboardPage() {
       try {
         setLoading(true);
         setError(null);
-        
+
+        const [statsRes, productsRes, postsRes, contactsRes] =
+          await Promise.all([
+            fetch("/api/dashboard?type=stats"),
+            fetch("/api/dashboard?type=recent-products&limit=3"),
+            fetch("/api/dashboard?type=recent-posts&limit=3"),
+            fetch("/api/dashboard?type=recent-contacts&limit=3"),
+          ]);
+
+        if (
+          !statsRes.ok ||
+          !productsRes.ok ||
+          !postsRes.ok ||
+          !contactsRes.ok
+        ) {
+          throw new Error("Failed to fetch dashboard data");
+        }
+
         const [stats, products, posts, contacts] = await Promise.all([
-          getDashboardStats(),
-          getRecentProducts(3),
-          getRecentBlogPosts(3),
-          getRecentContacts(3),
+          statsRes.json(),
+          productsRes.json(),
+          postsRes.json(),
+          contactsRes.json(),
         ]);
 
         setDashboardData(stats);
@@ -124,11 +136,11 @@ export default function DashboardPage() {
             <div className="text-red-500 mb-4">
               <AlertCircle className="h-12 w-12 mx-auto" />
             </div>
-            <h3 className="text-lg font-semibold mb-2">Error Loading Dashboard</h3>
+            <h3 className="text-lg font-semibold mb-2">
+              Error Loading Dashboard
+            </h3>
             <p className="text-muted-foreground mb-4">{error}</p>
-            <Button onClick={() => window.location.reload()}>
-              Try Again
-            </Button>
+            <Button onClick={() => window.location.reload()}>Try Again</Button>
           </CardContent>
         </Card>
       </div>
@@ -205,7 +217,7 @@ export default function DashboardPage() {
               <Card>
                 <CardHeader className="flex flex-row items-center justify-between">
                   <CardTitle>Product Management</CardTitle>
-                  <Link href="/admin/dashboard/products/new">
+                  <Link href="/admin/dashboard/products/">
                     <Button className="gap-2">
                       <Plus className="h-4 w-4" />
                       Add Product
@@ -244,13 +256,15 @@ export default function DashboardPage() {
                           <div className="flex items-center gap-4">
                             <div className="w-16 h-16 bg-muted rounded-lg flex items-center justify-center overflow-hidden">
                               {product.images && product.images.length > 0 ? (
-                                <Image
-                                  src={product.images[0]}
-                                  alt={product.name}
-                                  width={64}
-                                  height={64}
-                                  className="object-cover rounded-lg"
-                                />
+                                <>
+                                  <Image
+                                    src={product.images[0]}
+                                    alt={product.name}
+                                    width={64}
+                                    height={64}
+                                    className="object-cover rounded-lg"
+                                  />
+                                </>
                               ) : (
                                 <ShoppingBag className="h-6 w-6 text-muted-foreground" />
                               )}
