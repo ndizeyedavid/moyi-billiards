@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useTransition } from "react";
 import { motion } from "framer-motion";
 import {
   X,
@@ -12,6 +12,8 @@ import {
   Phone,
   Calendar,
 } from "lucide-react";
+import { sendEmail, validateEmailJSConfig } from "@/lib/emailjs";
+import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -28,14 +30,13 @@ import {
 } from "@/components/ui/select";
 
 interface Contact {
-  id: number;
+  id: string;
   name: string;
   email: string;
-  phone: string;
+  phone?: string;
   subject: string;
   message: string;
-  date: string;
-  time: string;
+  createdAt: Date;
   status: string;
   priority: string;
   category: string;
@@ -44,14 +45,15 @@ interface Contact {
 interface ContactReply {
   subject: string;
   message: string;
-  template: string;
-  cc: string;
-  bcc: string;
-  priority: string;
-  sendCopy: boolean;
+  cc?: string;
+  bcc?: string;
+  priority: "High" | "Urgent" | "Normal" | "Low";
   scheduleSend: boolean;
-  scheduleDate: string;
-  scheduleTime: string;
+  scheduleDate?: Date;
+  scheduleTime?: string;
+  sendCopy: boolean;
+  contactId: string;
+  template?: string;
 }
 
 interface ContactReplyFormProps {
@@ -192,8 +194,9 @@ export default function ContactReplyForm({
   onClose,
   onSend,
 }: ContactReplyFormProps) {
+  const [isPending, startTransition] = useTransition();
   const [formData, setFormData] = useState<ContactReply>({
-    subject: `Re: mellow`,
+    subject: `Re: Reply to user Message`,
     message: "",
     template: "custom",
     cc: "",
@@ -201,8 +204,9 @@ export default function ContactReplyForm({
     priority: "Normal",
     sendCopy: true,
     scheduleSend: false,
-    scheduleDate: "",
+    scheduleDate: new Date(),
     scheduleTime: "",
+    contactId: Math.random().toString(),
   });
 
   const [errors, setErrors] = useState<Record<string, string>>({});
@@ -253,12 +257,55 @@ export default function ContactReplyForm({
     return Object.keys(newErrors).length === 0;
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (validateForm()) {
-      onSend(formData);
-      onClose();
+    if (!validateForm()) return;
+
+    // Check if EmailJS is configured
+    if (!validateEmailJSConfig()) {
+      toast.error("Email service is not configured. Please check your environment variables.");
+      return;
     }
+
+    startTransition(async () => {
+      try {
+        // Prepare email parameters for EmailJS
+        const emailParams = {
+          to_email: contact.email,
+          to_name: contact.name,
+          from_name: "Wilson Moyi - Moyi Billiards",
+          from_email: "info@moyibilliards.com", // Your business email
+          subject: formData.subject,
+          message: formData.message,
+          reply_to: "info@moyibilliards.com",
+          cc: formData.cc,
+          bcc: formData.bcc,
+          priority: formData.priority,
+        };
+
+        // Send email directly to user
+        await sendEmail(emailParams);
+
+        // If user wants a copy, send to themselves too
+        if (formData.sendCopy) {
+          const copyParams = {
+            ...emailParams,
+            to_email: "info@moyibilliards.com", // Your business email
+            to_name: "Wilson Moyi",
+            subject: `[COPY] ${formData.subject}`,
+            message: `This is a copy of the reply sent to ${contact.name} (${contact.email}):\n\n${formData.message}`,
+          };
+          await sendEmail(copyParams);
+        }
+
+        toast.success("Reply sent successfully!");
+        onSend(formData);
+        onClose();
+      } catch (error) {
+        toast.error("Failed to send reply. Please try again.");
+        console.error("Error sending reply:", error);
+      }
+    });
   };
 
   const handleSaveDraft = () => {
@@ -437,9 +484,18 @@ export default function ContactReplyForm({
                           <Input
                             id="scheduleDate"
                             type="date"
-                            value={formData.scheduleDate}
+                            value={
+                              formData.scheduleDate
+                                ? new Date(formData.scheduleDate)
+                                    .toISOString()
+                                    .split("T")[0]
+                                : ""
+                            }
                             onChange={(e) =>
-                              handleInputChange("scheduleDate", e.target.value)
+                              handleInputChange(
+                                "scheduleDate",
+                                new Date(e.target.value)
+                              )
                             }
                             className={
                               errors.scheduleDate ? "border-red-500" : ""
@@ -502,7 +558,8 @@ export default function ContactReplyForm({
                       <div className="flex items-center gap-2">
                         <Calendar className="h-4 w-4 text-muted-foreground" />
                         <span className="text-sm">
-                          {contact.date} at {contact.time}
+                          {new Date(contact.createdAt).toLocaleDateString()} at{" "}
+                          {new Date(contact.createdAt).toLocaleTimeString()}
                         </span>
                       </div>
                     </div>
@@ -581,7 +638,11 @@ export default function ContactReplyForm({
                 )}
                 {formData.scheduleSend && (
                   <Badge variant="outline">
-                    Scheduled: {formData.scheduleDate} {formData.scheduleTime}
+                    Scheduled:{" "}
+                    {formData.scheduleDate
+                      ? new Date(formData.scheduleDate).toLocaleDateString()
+                      : ""}{" "}
+                    {formData.scheduleTime}
                   </Badge>
                 )}
               </div>

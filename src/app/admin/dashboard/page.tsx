@@ -1,5 +1,4 @@
 "use client";
-
 import { motion } from "framer-motion";
 import {
   ShoppingBag,
@@ -18,135 +17,123 @@ import {
   Bell,
   Settings,
   BarChart3,
+  Loader2,
+  AlertCircle,
 } from "lucide-react";
 import Link from "next/link";
+import Image from "next/image";
 
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Input } from "@/components/ui/input";
-import { useState } from "react";
-
-// Mock data for dashboard
-const dashboardStats = [
-  {
-    title: "Total Products",
-    value: "24",
-    change: "+2 this month",
-    icon: ShoppingBag,
-    color: "text-blue-600",
-    bgColor: "bg-blue-100 dark:bg-blue-900/20",
-  },
-  {
-    title: "Blog Posts",
-    value: "12",
-    change: "+3 this week",
-    icon: FileText,
-    color: "text-green-600",
-    bgColor: "bg-green-100 dark:bg-green-900/20",
-  },
-  {
-    title: "Contact Forms",
-    value: "47",
-    change: "+8 today",
-    icon: MessageSquare,
-    color: "text-orange-600",
-    bgColor: "bg-orange-100 dark:bg-orange-900/20",
-  },
-  {
-    title: "Team Members",
-    value: "8",
-    change: "No change",
-    icon: Users,
-    color: "text-purple-600",
-    bgColor: "bg-purple-100 dark:bg-purple-900/20",
-  },
-];
-
-const recentProducts = [
-  {
-    id: 1,
-    name: "Professional Pool Table",
-    price: "2,500,000 RWF",
-    status: "Active",
-    image: "/tables/table1.png",
-    views: 234,
-  },
-  {
-    id: 2,
-    name: "Standard Billiard Table",
-    price: "1,800,000 RWF",
-    status: "Active",
-    image: "/tables/table2.webp",
-    views: 189,
-  },
-  {
-    id: 3,
-    name: "Premium Tournament Table",
-    price: "3,200,000 RWF",
-    status: "Draft",
-    image: "/tables/table3.png",
-    views: 156,
-  },
-];
-
-const recentPosts = [
-  {
-    id: 1,
-    title: "The Evolution of Professional Pool Tables",
-    author: "Wilson Moyi",
-    date: "2024-01-15",
-    status: "Published",
-    views: 1247,
-  },
-  {
-    id: 2,
-    title: "Choosing the Right Pool Table",
-    author: "Wilson Moyi",
-    date: "2024-01-10",
-    status: "Published",
-    views: 892,
-  },
-  {
-    id: 3,
-    title: "Pool Table Maintenance Guide",
-    author: "Wilson Moyi",
-    date: "2024-01-08",
-    status: "Draft",
-    views: 0,
-  },
-];
-
-const recentContacts = [
-  {
-    id: 1,
-    name: "John Doe",
-    email: "john@example.com",
-    subject: "Custom Pool Table Inquiry",
-    date: "2024-01-15",
-    status: "New",
-  },
-  {
-    id: 2,
-    name: "Sarah Smith",
-    email: "sarah@example.com",
-    subject: "Pricing Information",
-    date: "2024-01-14",
-    status: "Replied",
-  },
-  {
-    id: 3,
-    name: "Mike Johnson",
-    email: "mike@example.com",
-    subject: "Installation Services",
-    date: "2024-01-13",
-    status: "New",
-  },
-];
+import {
+  getDashboardStats,
+  getRecentProducts,
+  getRecentBlogPosts,
+  getRecentContacts,
+} from "@/lib/actions/dashboard";
+import { useEffect, useState } from "react";
+import { toast } from "sonner";
 
 export default function DashboardPage() {
   const [searchQuery, setSearchQuery] = useState("");
+  const [dashboardData, setDashboardData] = useState<any>(null);
+  const [recentProducts, setRecentProducts] = useState<any[]>([]);
+  const [recentPosts, setRecentPosts] = useState<any[]>([]);
+  const [recentContacts, setRecentContacts] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    const fetchDashboardData = async () => {
+      try {
+        setLoading(true);
+        setError(null);
+        
+        const [stats, products, posts, contacts] = await Promise.all([
+          getDashboardStats(),
+          getRecentProducts(3),
+          getRecentBlogPosts(3),
+          getRecentContacts(3),
+        ]);
+
+        setDashboardData(stats);
+        setRecentProducts(products);
+        setRecentPosts(posts);
+        setRecentContacts(contacts);
+      } catch (error) {
+        console.error("Error fetching dashboard data:", error);
+        setError("Failed to load dashboard data. Please try again.");
+        toast.error("Failed to load dashboard data");
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchDashboardData();
+  }, []);
+
+  const dashboardStats = dashboardData
+    ? [
+        {
+          title: "Total Products",
+          value: dashboardData.totalProducts.toString(),
+          change: `${dashboardData.activePosts} active`,
+          trend: "up",
+          icon: ShoppingBag,
+          color: "text-blue-600",
+          bgColor: "bg-blue-100 dark:bg-blue-900/20",
+        },
+        {
+          title: "Blog Posts",
+          value: dashboardData.totalBlogPosts.toString(),
+          change: `${dashboardData.publishedPosts} published`,
+          trend: "up",
+          icon: FileText,
+          color: "text-green-600",
+          bgColor: "bg-green-100 dark:bg-green-900/20",
+        },
+        {
+          title: "Contact Forms",
+          value: dashboardData.totalContacts.toString(),
+          change: `${dashboardData.newContacts} new`,
+          trend: dashboardData.newContacts > 0 ? "up" : "neutral",
+          icon: MessageSquare,
+          color: "text-orange-600",
+          bgColor: "bg-orange-100 dark:bg-orange-900/20",
+        },
+        {
+          title: "Team Members",
+          value: dashboardData.totalTeamMembers.toString(),
+          change: "Active team",
+          trend: "neutral",
+          icon: Users,
+          color: "text-purple-600",
+          bgColor: "bg-purple-100 dark:bg-purple-900/20",
+        },
+      ]
+    : [];
+
+  if (error) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <Card className="w-full max-w-md">
+          <CardContent className="p-6 text-center">
+            <div className="text-red-500 mb-4">
+              <AlertCircle className="h-12 w-12 mx-auto" />
+            </div>
+            <h3 className="text-lg font-semibold mb-2">Error Loading Dashboard</h3>
+            <p className="text-muted-foreground mb-4">{error}</p>
+            <Button onClick={() => window.location.reload()}>
+              Try Again
+            </Button>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-background">
@@ -159,33 +146,50 @@ export default function DashboardPage() {
         >
           {/* Stats Grid */}
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-            {dashboardStats.map((stat, index) => (
-              <motion.div
-                key={stat.title}
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.5, delay: index * 0.1 }}
-              >
-                <Card>
-                  <CardContent className="p-6">
-                    <div className="flex items-center justify-between">
-                      <div>
-                        <p className="text-sm font-medium text-muted-foreground">
-                          {stat.title}
-                        </p>
-                        <p className="text-2xl font-bold">{stat.value}</p>
-                        <p className="text-xs text-muted-foreground mt-1">
-                          {stat.change}
-                        </p>
+            {loading
+              ? Array.from({ length: 4 }).map((_, index) => (
+                  <Card key={index}>
+                    <CardContent className="p-6">
+                      <div className="flex items-center justify-between">
+                        <div className="space-y-2">
+                          <div className="h-4 bg-muted rounded animate-pulse" />
+                          <div className="h-8 bg-muted rounded animate-pulse" />
+                          <div className="h-3 bg-muted rounded animate-pulse" />
+                        </div>
+                        <div className="p-3 rounded-lg bg-muted animate-pulse">
+                          <div className="h-6 w-6" />
+                        </div>
                       </div>
-                      <div className={`p-3 rounded-lg ${stat.bgColor}`}>
-                        <stat.icon className={`h-6 w-6 ${stat.color}`} />
-                      </div>
-                    </div>
-                  </CardContent>
-                </Card>
-              </motion.div>
-            ))}
+                    </CardContent>
+                  </Card>
+                ))
+              : dashboardStats.map((stat, index) => (
+                  <motion.div
+                    key={stat.title}
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ duration: 0.5, delay: index * 0.1 }}
+                  >
+                    <Card>
+                      <CardContent className="p-6">
+                        <div className="flex items-center justify-between">
+                          <div>
+                            <p className="text-sm font-medium text-muted-foreground">
+                              {stat.title}
+                            </p>
+                            <p className="text-2xl font-bold">{stat.value}</p>
+                            <p className="text-xs text-muted-foreground mt-1">
+                              {stat.change}
+                            </p>
+                          </div>
+                          <div className={`p-3 rounded-lg ${stat.bgColor}`}>
+                            <stat.icon className={`h-6 w-6 ${stat.color}`} />
+                          </div>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  </motion.div>
+                ))}
           </div>
 
           {/* Content Tabs */}
@@ -201,54 +205,98 @@ export default function DashboardPage() {
               <Card>
                 <CardHeader className="flex flex-row items-center justify-between">
                   <CardTitle>Product Management</CardTitle>
-                  <Button className="gap-2">
-                    <Plus className="h-4 w-4" />
-                    Add Product
-                  </Button>
+                  <Link href="/admin/dashboard/products/new">
+                    <Button className="gap-2">
+                      <Plus className="h-4 w-4" />
+                      Add Product
+                    </Button>
+                  </Link>
                 </CardHeader>
                 <CardContent>
                   <div className="space-y-4">
-                    {recentProducts.map((product) => (
-                      <div
-                        key={product.id}
-                        className="flex items-center justify-between p-4 border rounded-lg"
-                      >
-                        <div className="flex items-center gap-4">
-                          <div className="w-16 h-16 bg-muted rounded-lg flex items-center justify-center">
-                            <ShoppingBag className="h-6 w-6 text-muted-foreground" />
-                          </div>
-                          <div>
-                            <h3 className="font-medium">{product.name}</h3>
-                            <p className="text-sm text-muted-foreground">
-                              {product.price}
-                            </p>
-                            <div className="flex items-center gap-2 mt-1">
-                              <Eye className="h-3 w-3" />
-                              <span className="text-xs text-muted-foreground">
-                                {product.views} views
-                              </span>
+                    {loading ? (
+                      Array.from({ length: 3 }).map((_, index) => (
+                        <div
+                          key={index}
+                          className="flex items-center justify-between p-4 border rounded-lg"
+                        >
+                          <div className="flex items-center gap-4">
+                            <div className="w-16 h-16 bg-muted rounded-lg animate-pulse" />
+                            <div className="space-y-2">
+                              <div className="h-4 w-32 bg-muted rounded animate-pulse" />
+                              <div className="h-3 w-24 bg-muted rounded animate-pulse" />
+                              <div className="h-3 w-20 bg-muted rounded animate-pulse" />
                             </div>
                           </div>
+                          <div className="flex items-center gap-2">
+                            <div className="h-6 w-16 bg-muted rounded animate-pulse" />
+                            <div className="h-8 w-8 bg-muted rounded animate-pulse" />
+                            <div className="h-8 w-8 bg-muted rounded animate-pulse" />
+                          </div>
                         </div>
-                        <div className="flex items-center gap-2">
-                          <Badge
-                            variant={
-                              product.status === "Active"
-                                ? "default"
-                                : "secondary"
-                            }
-                          >
-                            {product.status}
-                          </Badge>
-                          <Button variant="ghost" size="icon">
-                            <Edit className="h-4 w-4" />
-                          </Button>
-                          <Button variant="ghost" size="icon">
-                            <Trash2 className="h-4 w-4" />
-                          </Button>
+                      ))
+                    ) : recentProducts.length > 0 ? (
+                      recentProducts.map((product) => (
+                        <div
+                          key={product.id}
+                          className="flex items-center justify-between p-4 border rounded-lg"
+                        >
+                          <div className="flex items-center gap-4">
+                            <div className="w-16 h-16 bg-muted rounded-lg flex items-center justify-center overflow-hidden">
+                              {product.images && product.images.length > 0 ? (
+                                <Image
+                                  src={product.images[0]}
+                                  alt={product.name}
+                                  width={64}
+                                  height={64}
+                                  className="object-cover rounded-lg"
+                                />
+                              ) : (
+                                <ShoppingBag className="h-6 w-6 text-muted-foreground" />
+                              )}
+                            </div>
+                            <div>
+                              <h3 className="font-medium">{product.name}</h3>
+                              <p className="text-sm text-muted-foreground">
+                                {product.price.toLocaleString()} RWF
+                              </p>
+                              <div className="flex items-center gap-2 mt-1">
+                                <Calendar className="h-3 w-3" />
+                                <span className="text-xs text-muted-foreground">
+                                  {new Date(
+                                    product.createdAt
+                                  ).toLocaleDateString()}
+                                </span>
+                              </div>
+                            </div>
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <Badge
+                              variant={
+                                product.status === "Active"
+                                  ? "default"
+                                  : "secondary"
+                              }
+                            >
+                              {product.status}
+                            </Badge>
+                            <Link href={`/admin/dashboard/products`}>
+                              <Button variant="ghost" size="icon">
+                                <Edit className="h-4 w-4" />
+                              </Button>
+                            </Link>
+                            <Button variant="ghost" size="icon">
+                              <Trash2 className="h-4 w-4" />
+                            </Button>
+                          </div>
                         </div>
+                      ))
+                    ) : (
+                      <div className="text-center py-8 text-muted-foreground">
+                        <ShoppingBag className="h-12 w-12 mx-auto mb-4 opacity-50" />
+                        <p>No products found. Create your first product!</p>
                       </div>
-                    ))}
+                    )}
                   </div>
                 </CardContent>
               </Card>
@@ -259,54 +307,91 @@ export default function DashboardPage() {
               <Card>
                 <CardHeader className="flex flex-row items-center justify-between">
                   <CardTitle>Blog Post Management</CardTitle>
-                  <Button className="gap-2">
-                    <Plus className="h-4 w-4" />
-                    New Post
-                  </Button>
+                  <Link href="/admin/dashboard/posts/new">
+                    <Button className="gap-2">
+                      <Plus className="h-4 w-4" />
+                      New Post
+                    </Button>
+                  </Link>
                 </CardHeader>
                 <CardContent>
                   <div className="space-y-4">
-                    {recentPosts.map((post) => (
-                      <div
-                        key={post.id}
-                        className="flex items-center justify-between p-4 border rounded-lg"
-                      >
-                        <div className="flex items-center gap-4">
-                          <div className="w-16 h-16 bg-muted rounded-lg flex items-center justify-center">
-                            <FileText className="h-6 w-6 text-muted-foreground" />
-                          </div>
-                          <div>
-                            <h3 className="font-medium">{post.title}</h3>
-                            <p className="text-sm text-muted-foreground">
-                              By {post.author} • {post.date}
-                            </p>
-                            <div className="flex items-center gap-2 mt-1">
-                              <Eye className="h-3 w-3" />
-                              <span className="text-xs text-muted-foreground">
-                                {post.views} views
-                              </span>
+                    {loading ? (
+                      Array.from({ length: 3 }).map((_, index) => (
+                        <div
+                          key={index}
+                          className="flex items-center justify-between p-4 border rounded-lg"
+                        >
+                          <div className="flex items-center gap-4">
+                            <div className="w-16 h-16 bg-muted rounded-lg animate-pulse" />
+                            <div className="space-y-2">
+                              <div className="h-4 w-40 bg-muted rounded animate-pulse" />
+                              <div className="h-3 w-32 bg-muted rounded animate-pulse" />
+                              <div className="h-3 w-24 bg-muted rounded animate-pulse" />
                             </div>
                           </div>
+                          <div className="flex items-center gap-2">
+                            <div className="h-6 w-20 bg-muted rounded animate-pulse" />
+                            <div className="h-8 w-8 bg-muted rounded animate-pulse" />
+                            <div className="h-8 w-8 bg-muted rounded animate-pulse" />
+                          </div>
                         </div>
-                        <div className="flex items-center gap-2">
-                          <Badge
-                            variant={
-                              post.status === "Published"
-                                ? "default"
-                                : "secondary"
-                            }
-                          >
-                            {post.status}
-                          </Badge>
-                          <Button variant="ghost" size="icon">
-                            <Edit className="h-4 w-4" />
-                          </Button>
-                          <Button variant="ghost" size="icon">
-                            <Trash2 className="h-4 w-4" />
-                          </Button>
+                      ))
+                    ) : recentPosts.length > 0 ? (
+                      recentPosts.map((post) => (
+                        <div
+                          key={post.id}
+                          className="flex items-center justify-between p-4 border rounded-lg"
+                        >
+                          <div className="flex items-center gap-4">
+                            <div className="w-16 h-16 bg-muted rounded-lg flex items-center justify-center">
+                              <FileText className="h-6 w-6 text-muted-foreground" />
+                            </div>
+                            <div>
+                              <h3 className="font-medium">{post.title}</h3>
+                              <p className="text-sm text-muted-foreground">
+                                By {post.author} •{" "}
+                                {new Date(
+                                  post.publishedAt || post.createdAt
+                                ).toLocaleDateString()}
+                              </p>
+                              <div className="flex items-center gap-2 mt-1">
+                                <Calendar className="h-3 w-3" />
+                                <span className="text-xs text-muted-foreground">
+                                  {post.readTime
+                                    ? `${post.readTime} min read`
+                                    : "Draft"}
+                                </span>
+                              </div>
+                            </div>
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <Badge
+                              variant={
+                                post.status === "Published"
+                                  ? "default"
+                                  : "secondary"
+                              }
+                            >
+                              {post.status}
+                            </Badge>
+                            <Link href={`/admin/dashboard/posts`}>
+                              <Button variant="ghost" size="icon">
+                                <Edit className="h-4 w-4" />
+                              </Button>
+                            </Link>
+                            <Button variant="ghost" size="icon">
+                              <Trash2 className="h-4 w-4" />
+                            </Button>
+                          </div>
                         </div>
+                      ))
+                    ) : (
+                      <div className="text-center py-8 text-muted-foreground">
+                        <FileText className="h-12 w-12 mx-auto mb-4 opacity-50" />
+                        <p>No blog posts found. Create your first post!</p>
                       </div>
-                    ))}
+                    )}
                   </div>
                 </CardContent>
               </Card>
@@ -320,47 +405,78 @@ export default function DashboardPage() {
                 </CardHeader>
                 <CardContent>
                   <div className="space-y-4">
-                    {recentContacts.map((contact) => (
-                      <div
-                        key={contact.id}
-                        className="flex items-center justify-between p-4 border rounded-lg"
-                      >
-                        <div className="flex items-center gap-4">
-                          <div className="w-16 h-16 bg-muted rounded-lg flex items-center justify-center">
-                            <MessageSquare className="h-6 w-6 text-muted-foreground" />
-                          </div>
-                          <div>
-                            <h3 className="font-medium">{contact.name}</h3>
-                            <p className="text-sm text-muted-foreground">
-                              {contact.email}
-                            </p>
-                            <p className="text-sm font-medium mt-1">
-                              {contact.subject}
-                            </p>
-                            <div className="flex items-center gap-2 mt-1">
-                              <Calendar className="h-3 w-3" />
-                              <span className="text-xs text-muted-foreground">
-                                {contact.date}
-                              </span>
+                    {loading ? (
+                      Array.from({ length: 3 }).map((_, index) => (
+                        <div
+                          key={index}
+                          className="flex items-center justify-between p-4 border rounded-lg"
+                        >
+                          <div className="flex items-center gap-4">
+                            <div className="w-16 h-16 bg-muted rounded-lg animate-pulse" />
+                            <div className="space-y-2">
+                              <div className="h-4 w-32 bg-muted rounded animate-pulse" />
+                              <div className="h-3 w-40 bg-muted rounded animate-pulse" />
+                              <div className="h-3 w-28 bg-muted rounded animate-pulse" />
                             </div>
                           </div>
+                          <div className="flex items-center gap-2">
+                            <div className="h-6 w-16 bg-muted rounded animate-pulse" />
+                            <div className="h-8 w-8 bg-muted rounded animate-pulse" />
+                          </div>
                         </div>
-                        <div className="flex items-center gap-2">
-                          <Badge
-                            variant={
-                              contact.status === "New"
-                                ? "destructive"
-                                : "default"
-                            }
-                          >
-                            {contact.status}
-                          </Badge>
-                          <Button variant="ghost" size="icon">
-                            <Eye className="h-4 w-4" />
-                          </Button>
+                      ))
+                    ) : recentContacts.length > 0 ? (
+                      recentContacts.map((contact) => (
+                        <div
+                          key={contact.id}
+                          className="flex items-center justify-between p-4 border rounded-lg"
+                        >
+                          <div className="flex items-center gap-4">
+                            <div className="w-16 h-16 bg-muted rounded-lg flex items-center justify-center">
+                              <MessageSquare className="h-6 w-6 text-muted-foreground" />
+                            </div>
+                            <div>
+                              <h3 className="font-medium">{contact.name}</h3>
+                              <p className="text-sm text-muted-foreground">
+                                {contact.email}
+                              </p>
+                              <p className="text-sm font-medium mt-1">
+                                {contact.subject}
+                              </p>
+                              <div className="flex items-center gap-2 mt-1">
+                                <Calendar className="h-3 w-3" />
+                                <span className="text-xs text-muted-foreground">
+                                  {new Date(
+                                    contact.createdAt
+                                  ).toLocaleDateString()}
+                                </span>
+                              </div>
+                            </div>
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <Badge
+                              variant={
+                                contact.status === "New"
+                                  ? "destructive"
+                                  : "default"
+                              }
+                            >
+                              {contact.status}
+                            </Badge>
+                            <Link href={`/admin/dashboard/contacts`}>
+                              <Button variant="ghost" size="icon">
+                                <Eye className="h-4 w-4" />
+                              </Button>
+                            </Link>
+                          </div>
                         </div>
+                      ))
+                    ) : (
+                      <div className="text-center py-8 text-muted-foreground">
+                        <MessageSquare className="h-12 w-12 mx-auto mb-4 opacity-50" />
+                        <p>No contact submissions found.</p>
                       </div>
-                    ))}
+                    )}
                   </div>
                 </CardContent>
               </Card>
