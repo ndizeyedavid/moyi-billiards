@@ -1,0 +1,205 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// Product Management
+model Product {
+  id          String   @id @default(cuid())
+  name        String
+  description String?
+  price       Decimal
+  currency    String   @default("RWF")
+  category    String
+  status      String   @default("Active") // Active, Draft, Out of Stock
+  featured    Boolean  @default(false)
+  
+  // Inventory
+  stock       Int      @default(0)
+  sku         String?  @unique
+  
+  // Specifications
+  specifications Json?
+  
+  // Images
+  images      String[] // Array of image URLs
+  
+  // SEO
+  slug        String?  @unique
+  metaTitle   String?
+  metaDescription String?
+  
+  // Timestamps
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  
+  @@map("products")
+}
+
+// Blog Management
+model BlogPost {
+  id          String   @id @default(cuid())
+  title       String
+  slug        String   @unique
+  content     String
+  excerpt     String?
+  
+  // Author
+  author      String
+  
+  // Status
+  status      String   @default("Draft") // Draft, Published, Scheduled
+  publishedAt DateTime?
+  
+  // Categories and Tags
+  category    String
+  tags        String[]
+  
+  // Featured
+  featured    Boolean  @default(false)
+  featuredImage String?
+  
+  // SEO
+  metaTitle   String?
+  metaDescription String?
+  
+  // Reading stats
+  readTime    Int?     // in minutes
+  wordCount   Int?
+  
+  // Timestamps
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  
+  @@map("blog_posts")
+}
+
+// Team Management
+model TeamMember {
+  id          String   @id @default(cuid())
+  
+  // Personal Information
+  firstName   String
+  lastName    String
+  email       String   @unique
+  phone       String?
+  avatar      String?
+  
+  // Job Information
+  role        String
+  department  String
+  startDate   DateTime
+  salary      Decimal?
+  
+  // Status
+  status      String   @default("Active") // Active, On Leave, Inactive
+  
+  // Skills and Permissions
+  skills      String[]
+  permissions Json?
+  
+  // Emergency Contact
+  emergencyContact Json?
+  
+  // Address
+  address     String?
+  
+  // Timestamps
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  lastActive  DateTime @default(now())
+  
+  @@map("team_members")
+}
+
+// Contact Management
+model Contact {
+  id          String   @id @default(cuid())
+  
+  // Contact Information
+  name        String
+  email       String
+  phone       String?
+  
+  // Message Details
+  subject     String
+  message     String
+  category    String   // Sales Inquiry, Service Request, Installation, etc.
+  
+  // Status and Priority
+  status      String   @default("New") // New, In Progress, Replied, Closed
+  priority    String   @default("Medium") // High, Medium, Low
+  
+  // Source
+  source      String   @default("Website") // Website, Phone, Email, etc.
+  
+  // Timestamps
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  
+  // Relations
+  replies     ContactReply[]
+  
+  @@map("contacts")
+}
+
+// Contact Replies
+model ContactReply {
+  id          String   @id @default(cuid())
+  
+  // Reply Details
+  subject     String
+  message     String
+  
+  // Email Settings
+  cc          String?
+  bcc         String?
+  priority    String   @default("Normal") // High, Urgent, Normal, Low
+  
+  // Scheduling
+  scheduleSend Boolean  @default(false)
+  scheduleDate DateTime?
+  scheduleTime String?
+  
+  // Options
+  sendCopy    Boolean  @default(false)
+  
+  // Status
+  sent        Boolean  @default(false)
+  sentAt      DateTime?
+  
+  // Relations
+  contactId   String
+  contact     Contact  @relation(fields: [contactId], references: [id], onDelete: Cascade)
+  
+  // Timestamps
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  
+  @@map("contact_replies")
+}
+
+// User Management (for admin authentication)
+model User {
+  id          String   @id @default(cuid())
+  email       String   @unique
+  name        String?
+  role        String   @default("ADMIN") // ADMIN, MANAGER, STAFF
+  
+  // Authentication
+  password    String
+  
+  // Timestamps
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  lastLogin   DateTime?
+  
+  @@map("users")
+}
