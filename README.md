@@ -22,6 +22,14 @@ A modern web application for managing a billiards business, built with Next.js, 
 - **File Upload**: Cloudinary
 - **Deployment**: Vercel
 
+## Screenshots
+
+<img width="1919" height="873" alt="image" src="https://github.com/user-attachments/assets/684c1d73-627d-4cd1-aaa2-c2dde64ed6e0" />
+
+<img width="1919" height="859" alt="image" src="https://github.com/user-attachments/assets/3f246633-d502-4c6a-a5d3-f053cc4dac3c" />
+
+<img width="1919" height="871" alt="image" src="https://github.com/user-attachments/assets/59c68679-1686-49e0-80bb-8c17f4fafe67" />
+
 ## Getting Started
 
 1. Clone the repository:
