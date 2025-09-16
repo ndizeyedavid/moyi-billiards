@@ -17,11 +17,11 @@ export async function POST(request: NextRequest) {
     }
 
     // Create default admin user
-    const hashedPassword = await hashPassword("admin123");
+    const hashedPassword = await hashPassword("0123456789");
 
     const adminUser = await prisma.user.create({
       data: {
-        email: "admin@moyibilliards.rw",
+        email: "moyi@gmail.com",
         name: "Wilson Moyi",
         password: hashedPassword,
         role: "Admin",
