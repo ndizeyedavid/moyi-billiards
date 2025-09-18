@@ -444,7 +444,7 @@ export default function ContactPage() {
               <CardContent>
                 <div className="aspect-video bg-muted rounded-lg flex items-center justify-center overflow-hidden">
                   <iframe
-                    src="https://www.google.com/maps/embed?pb=!1m14!1m12!1m3!1d9303.2034369393!2d30.065137398446875!3d-1.929010937273599!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!5e0!3m2!1sen!2srw!4v1758133576893!5m2!1sen!2srw"
+                    src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3987.5591377014393!2d30.064286300000003!3d-1.9282229000000002!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x19dca5001e9e1bdf%3A0x6dfde8c157194a1a!2sMoyi%20Billiards!5e0!3m2!1sen!2srw!4v1758182026510!5m2!1sen!2srw"
                     width="100%"
                     height="100%"
                     style={{ border: 0 }}
