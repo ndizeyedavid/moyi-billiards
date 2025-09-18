@@ -1,13 +1,13 @@
 "use client";
 
-import { useState, useTransition } from "react";
+import { useState, useTransition, useEffect } from "react";
 import { motion } from "framer-motion";
 import { X, Save, Upload, Plus, Minus, Eye } from "lucide-react";
 import { createProduct, updateProduct } from "@/lib/actions/products";
 import { ProductInput } from "@/lib/validations";
 import { toast } from "sonner";
 import Image from "next/image";
-import { ImageUpload } from "@/components/ui/image-upload";
+import { MultipleImageUpload } from "@/components/ui/multiple-image-upload";
 
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -47,22 +47,64 @@ export default function ProductForm({
 }: ProductFormProps) {
   const [isPending, startTransition] = useTransition();
   const [formData, setFormData] = useState<Product>({
-    name: product?.name || "",
-    description: product?.description || "",
-    price: product?.price || 0,
-    currency: product?.currency || "RWF",
-    category: product?.category || "",
-    status: product?.status || "Active",
-    featured: product?.featured || false,
-    stock: product?.stock || 0,
-    sku: product?.sku || "",
-    specifications: product?.specifications || {},
-    images: product?.images || [],
-    slug: product?.slug || "",
-    metaTitle: product?.metaTitle || "",
-    metaDescription: product?.metaDescription || "",
+    name: "",
+    description: "",
+    price: 0,
+    currency: "RWF",
+    category: "",
+    status: "Active",
+    featured: false,
+    stock: 0,
+    sku: "",
+    specifications: {},
+    images: [],
+    slug: "",
+    metaTitle: "",
+    metaDescription: "",
   });
   const [errors, setErrors] = useState<Record<string, string>>({});
+
+  // Update form data when product prop changes
+  useEffect(() => {
+    if (product) {
+      setFormData({
+        name: product.name || "",
+        description: product.description || "",
+        price: product.price || 0,
+        currency: product.currency || "RWF",
+        category: product.category || "",
+        status: product.status || "Active",
+        featured: product.featured || false,
+        stock: product.stock || 0,
+        sku: product.sku || "",
+        specifications: product.specifications || {},
+        images: product.images || [],
+        slug: product.slug || "",
+        metaTitle: product.metaTitle || "",
+        metaDescription: product.metaDescription || "",
+      });
+    } else {
+      // Reset form for new product
+      setFormData({
+        name: "",
+        description: "",
+        price: 0,
+        currency: "RWF",
+        category: "",
+        status: "Active",
+        featured: false,
+        stock: 0,
+        sku: "",
+        specifications: {},
+        images: [],
+        slug: "",
+        metaTitle: "",
+        metaDescription: "",
+      });
+    }
+    // Clear errors when switching between add/edit modes
+    setErrors({});
+  }, [product]);
   const handleInputChange = (field: keyof Product, value: any) => {
     setFormData((prev) => ({ ...prev, [field]: value }));
     // Clear error when user starts typing
@@ -71,13 +113,8 @@ export default function ProductForm({
     }
   };
 
-  const handleImageUpload = (url: string) => {
-    handleInputChange("images", [url]);
-    // Toast is already shown by ImageUpload component
-  };
-
-  const handleImageRemove = () => {
-    handleInputChange("images", []);
+  const handleImagesChange = (urls: string[]) => {
+    handleInputChange("images", urls);
   };
 
   const validateForm = () => {
@@ -315,16 +352,16 @@ export default function ProductForm({
               <div className="space-y-6">
                 <Card>
                   <CardHeader>
-                    <CardTitle>Product Image *</CardTitle>
+                    <CardTitle>Product Images *</CardTitle>
                   </CardHeader>
                   <CardContent>
-                    <ImageUpload
-                      value={formData.images?.[0] || ""}
-                      onChange={handleImageUpload}
-                      onRemove={handleImageRemove}
+                    <MultipleImageUpload
+                      value={formData.images || []}
+                      onChange={handleImagesChange}
                       folder="products"
-                      placeholder="Upload product image"
+                      placeholder="Upload product images"
                       aspectRatio="video"
+                      maxImages={5}
                     />
                     {errors.images && (
                       <p className="text-sm text-red-500 mt-2">

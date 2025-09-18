@@ -19,7 +19,11 @@ import {
   Loader2,
 } from "lucide-react";
 import { useState, useEffect } from "react";
-import { getContacts, deleteContact, createContactReply } from "@/lib/actions/contacts";
+import {
+  getContacts,
+  deleteContact,
+  createContactReply,
+} from "@/lib/actions/contacts";
 import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
@@ -63,7 +67,14 @@ interface ContactReply {
   createdAt: Date;
 }
 
-const categories = ["All", "Sales Inquiry", "Service Request", "Installation", "Rental", "Bulk Order"];
+const categories = [
+  "All",
+  "Sales Inquiry",
+  "Service Request",
+  "Installation",
+  "Rental",
+  "Bulk Order",
+];
 const statuses = ["All", "New", "In Progress", "Replied", "Closed"];
 const priorities = ["All", "High", "Medium", "Low"];
 
@@ -73,7 +84,9 @@ export default function ContactsPage() {
   const [filterStatus, setFilterStatus] = useState("All");
   const [filterPriority, setFilterPriority] = useState("All");
   const [isContactReplyFormOpen, setIsContactReplyFormOpen] = useState(false);
-  const [replyingToContact, setReplyingToContact] = useState<Contact | null>(null);
+  const [replyingToContact, setReplyingToContact] = useState<Contact | null>(
+    null
+  );
   const [contacts, setContacts] = useState<Contact[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -94,13 +107,15 @@ export default function ContactsPage() {
         priority: filterPriority !== "All" ? filterPriority : undefined,
         limit: 50, // Get more contacts for the dashboard
       });
-      
+
       if (result.success && result.data) {
         // Transform the data to match our interface
-        const transformedContacts = result.data.contacts.map((contact: any) => ({
-          ...contact,
-          replies: contact.replies || [],
-        }));
+        const transformedContacts = result.data.contacts.map(
+          (contact: any) => ({
+            ...contact,
+            replies: contact.replies || [],
+          })
+        );
         setContacts(transformedContacts);
       } else {
         setError(result.error || "Failed to fetch contacts");
@@ -135,9 +150,14 @@ export default function ContactsPage() {
     },
     {
       title: "Response Rate",
-      value: contacts.length > 0 
-        ? `${Math.round((contacts.filter((c) => c.status === "Replied").length / contacts.length) * 100)}%`
-        : "0%",
+      value:
+        contacts.length > 0
+          ? `${Math.round(
+              (contacts.filter((c) => c.status === "Replied").length /
+                contacts.length) *
+                100
+            )}%`
+          : "0%",
       change: "Replied contacts",
       icon: CheckCircle,
       color: "text-orange-600",
@@ -154,16 +174,19 @@ export default function ContactsPage() {
   ];
 
   const filteredContacts = contacts.filter((contact) => {
-    const matchesSearch = 
+    const matchesSearch =
       contact.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
       contact.email.toLowerCase().includes(searchQuery.toLowerCase()) ||
       contact.subject.toLowerCase().includes(searchQuery.toLowerCase()) ||
       contact.message.toLowerCase().includes(searchQuery.toLowerCase());
-    
-    const matchesCategory = filterCategory === "All" || contact.category === filterCategory;
-    const matchesStatus = filterStatus === "All" || contact.status === filterStatus;
-    const matchesPriority = filterPriority === "All" || contact.priority === filterPriority;
-    
+
+    const matchesCategory =
+      filterCategory === "All" || contact.category === filterCategory;
+    const matchesStatus =
+      filterStatus === "All" || contact.status === filterStatus;
+    const matchesPriority =
+      filterPriority === "All" || contact.priority === filterPriority;
+
     return matchesSearch && matchesCategory && matchesStatus && matchesPriority;
   });
 
@@ -268,7 +291,7 @@ export default function ContactsPage() {
             Manage customer inquiries and messages
           </p>
         </div>
-        <div className="flex gap-2">
+        {/* <div className="flex gap-2">
           <Button variant="outline" className="gap-2">
             <Archive className="h-4 w-4" />
             Archive Selected
@@ -277,7 +300,7 @@ export default function ContactsPage() {
             <Reply className="h-4 w-4" />
             Bulk Reply
           </Button>
-        </div>
+        </div> */}
       </div>
 
       {/* Stats Grid */}
@@ -324,7 +347,7 @@ export default function ContactsPage() {
                 className="pl-10"
               />
             </div>
-            
+
             <div className="flex flex-wrap gap-2">
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
@@ -409,22 +432,26 @@ export default function ContactsPage() {
                       <Badge variant="outline" className="text-xs">
                         {contact.category}
                       </Badge>
-                      <span className={`text-xs font-medium ${getPriorityColor(contact.priority)}`}>
+                      <span
+                        className={`text-xs font-medium ${getPriorityColor(
+                          contact.priority
+                        )}`}
+                      >
                         {contact.priority} Priority
                       </span>
                     </div>
-                    <Badge variant={getStatusColor(contact.status)}>
+                    {/* <Badge variant={getStatusColor(contact.status)}>
                       {contact.status}
-                    </Badge>
+                    </Badge> */}
                   </div>
-                  
+
                   <div className="space-y-1">
                     <p className="font-medium text-base">{contact.subject}</p>
                     <p className="text-sm text-muted-foreground line-clamp-2">
                       {contact.message}
                     </p>
                   </div>
-                  
+
                   <div className="flex items-center gap-4 text-xs text-muted-foreground">
                     <div className="flex items-center gap-1">
                       <Mail className="h-3 w-3" />
@@ -436,27 +463,33 @@ export default function ContactsPage() {
                     </div>
                     <div className="flex items-center gap-1">
                       <Calendar className="h-3 w-3" />
-                      {new Date(contact.createdAt).toLocaleDateString()} at {new Date(contact.createdAt).toLocaleTimeString()}
+                      {new Date(contact.createdAt).toLocaleDateString()} at{" "}
+                      {new Date(contact.createdAt).toLocaleTimeString()}
                     </div>
                     <Badge variant="outline" className="text-xs">
                       {contact.source}
                     </Badge>
                   </div>
                 </div>
-                
+
                 <div className="flex items-center gap-2 ml-4">
-                  <Button variant="ghost" size="icon" className="h-8 w-8">
+                  {/* <Button variant="ghost" size="icon" className="h-8 w-8">
                     <Star className="h-4 w-4" />
                   </Button>
                   <Button variant="ghost" size="icon" className="h-8 w-8">
                     <Eye className="h-4 w-4" />
                   </Button>
-                  <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => handleReplyToContact(contact)}>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="h-8 w-8"
+                    onClick={() => handleReplyToContact(contact)}
+                  >
                     <Reply className="h-4 w-4" />
-                  </Button>
-                  <Button 
-                    variant="ghost" 
-                    size="icon" 
+                  </Button> */}
+                  <Button
+                    variant="ghost"
+                    size="icon"
                     className="h-8 w-8 text-destructive hover:text-destructive"
                     onClick={() => handleDeleteContact(contact.id)}
                   >

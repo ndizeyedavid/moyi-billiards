@@ -369,29 +369,29 @@ export default function ProductsPage() {
                         </Button>
                       </DropdownMenuTrigger>
                       <DropdownMenuContent align="end">
-                        <DropdownMenuItem>
+                        {/* <DropdownMenuItem>
                           <Eye className="h-4 w-4 mr-2" />
                           View Details
-                        </DropdownMenuItem>
+                        </DropdownMenuItem> */}
                         <DropdownMenuItem
                           onClick={() => handleEditProduct(product)}
                         >
                           <Edit className="h-4 w-4 mr-2" />
                           Edit
                         </DropdownMenuItem>
-                        <DropdownMenuItem
+                        {/* <DropdownMenuItem
                           onClick={() => handleDuplicateProduct(product.id)}
                         >
                           <Copy className="h-4 w-4 mr-2" />
                           Duplicate
-                        </DropdownMenuItem>
+                        </DropdownMenuItem> */}
                         <DropdownMenuSeparator />
-                        <DropdownMenuItem
+                        {/* <DropdownMenuItem
                           onClick={() => handleArchiveProduct(product.id)}
                         >
                           <Archive className="h-4 w-4 mr-2" />
                           Archive
-                        </DropdownMenuItem>
+                        </DropdownMenuItem> */}
                         <DropdownMenuItem
                           className="text-destructive"
                           onClick={() => handleDeleteProduct(product.id)}

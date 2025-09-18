@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useTransition } from "react";
+import { useState, useTransition, useEffect } from "react";
 import { motion } from "framer-motion";
 import { X, Upload, Save, Eye, Calendar, Clock } from "lucide-react";
 import { createBlogPost, updateBlogPost } from "@/lib/actions/blog-posts";
@@ -38,47 +38,101 @@ interface BlogPostFormProps {
   onSave: (post: BlogPost) => void;
 }
 
-const categories = ["History", "Buying Guide", "Maintenance", "Professional", "Craftsmanship", "News"];
+const categories = [
+  "History",
+  "Buying Guide",
+  "Maintenance",
+  "Professional",
+  "Craftsmanship",
+  "News",
+];
 const statuses = ["Published", "Draft", "Scheduled"];
 const authors = ["Wilson Moyi", "Admin"];
 
-export default function BlogPostForm({ post, isOpen, onClose, onSave }: BlogPostFormProps) {
+export default function BlogPostForm({
+  post,
+  isOpen,
+  onClose,
+  onSave,
+}: BlogPostFormProps) {
   const [isPending, startTransition] = useTransition();
   const [formData, setFormData] = useState<BlogPost>({
-    title: post?.title || "",
-    slug: post?.slug || "",
-    content: post?.content || "",
-    excerpt: post?.excerpt || "",
-    author: post?.author || "Wilson Moyi",
-    category: post?.category || "News",
-    status: post?.status || "Draft",
-    featured: post?.featured || false,
-    publishedAt: post?.publishedAt || new Date(),
-    tags: post?.tags || [],
-    metaTitle: post?.metaTitle || "",
-    metaDescription: post?.metaDescription || "",
-    featuredImage: post?.featuredImage || "",
+    title: "",
+    slug: "",
+    content: "",
+    excerpt: "",
+    author: "Wilson Moyi",
+    category: "News",
+    status: "Draft",
+    featured: false,
+    publishedAt: new Date(),
+    tags: [],
+    metaTitle: "",
+    metaDescription: "",
+    featuredImage: "",
   });
 
   const [tagInput, setTagInput] = useState("");
   const [errors, setErrors] = useState<Record<string, string>>({});
 
+  // Update form data when post prop changes
+  useEffect(() => {
+    if (post) {
+      setFormData({
+        title: post.title || "",
+        slug: post.slug || "",
+        content: post.content || "",
+        excerpt: post.excerpt || "",
+        author: post.author || "Wilson Moyi",
+        category: post.category || "News",
+        status: post.status || "Draft",
+        featured: post.featured || false,
+        publishedAt: post.publishedAt || new Date(),
+        tags: post.tags || [],
+        metaTitle: post.metaTitle || "",
+        metaDescription: post.metaDescription || "",
+        featuredImage: post.featuredImage || "",
+      });
+    } else {
+      // Reset form for new post
+      setFormData({
+        title: "",
+        slug: "",
+        content: "",
+        excerpt: "",
+        author: "Wilson Moyi",
+        category: "News",
+        status: "Draft",
+        featured: false,
+        publishedAt: new Date(),
+        tags: [],
+        metaTitle: "",
+        metaDescription: "",
+        featuredImage: "",
+      });
+    }
+    // Clear errors when switching between add/edit modes
+    setErrors({});
+    setTagInput("");
+  }, [post]);
+
   const handleInputChange = (field: keyof BlogPost, value: any) => {
-    setFormData(prev => ({ ...prev, [field]: value }));
-    
+    setFormData((prev) => ({ ...prev, [field]: value }));
+
     // Auto-generate slug from title
     if (field === "title") {
-      const slug = value.toLowerCase()
-        .replace(/[^a-z0-9\s-]/g, '')
-        .replace(/\s+/g, '-')
-        .replace(/-+/g, '-')
+      const slug = value
+        .toLowerCase()
+        .replace(/[^a-z0-9\s-]/g, "")
+        .replace(/\s+/g, "-")
+        .replace(/-+/g, "-")
         .trim();
-      setFormData(prev => ({ ...prev, slug }));
+      setFormData((prev) => ({ ...prev, slug }));
     }
 
     // Clear error when user starts typing
     if (errors[field]) {
-      setErrors(prev => ({ ...prev, [field]: "" }));
+      setErrors((prev) => ({ ...prev, [field]: "" }));
     }
   };
 
@@ -98,7 +152,10 @@ export default function BlogPostForm({ post, isOpen, onClose, onSave }: BlogPost
   };
 
   const removeTag = (tagToRemove: string) => {
-    handleInputChange("tags", formData.tags.filter(tag => tag !== tagToRemove));
+    handleInputChange(
+      "tags",
+      formData.tags.filter((tag) => tag !== tagToRemove)
+    );
   };
 
   const calculateReadTime = (content: string) => {
@@ -128,7 +185,7 @@ export default function BlogPostForm({ post, isOpen, onClose, onSave }: BlogPost
       try {
         console.log("Saving blog post...");
         let result;
-        
+
         if (post?.id) {
           result = await updateBlogPost(post.id, formData);
         } else {
@@ -136,11 +193,17 @@ export default function BlogPostForm({ post, isOpen, onClose, onSave }: BlogPost
         }
 
         if (result.success) {
-          toast.success(post?.id ? "Blog post updated successfully!" : "Blog post created successfully!");
+          toast.success(
+            post?.id
+              ? "Blog post updated successfully!"
+              : "Blog post created successfully!"
+          );
           onSave({ ...formData, id: post?.id || result.data?.id });
           onClose();
         } else {
-          toast.error(result.error || "Failed to save blog post. Please try again.");
+          toast.error(
+            result.error || "Failed to save blog post. Please try again."
+          );
         }
       } catch (error) {
         toast.error("An unexpected error occurred. Please try again.");
@@ -183,11 +246,15 @@ export default function BlogPostForm({ post, isOpen, onClose, onSave }: BlogPost
                       <Input
                         id="title"
                         value={formData.title}
-                        onChange={(e) => handleInputChange("title", e.target.value)}
+                        onChange={(e) =>
+                          handleInputChange("title", e.target.value)
+                        }
                         placeholder="Enter post title"
                         className={errors.title ? "border-red-500" : ""}
                       />
-                      {errors.title && <p className="text-sm text-red-500">{errors.title}</p>}
+                      {errors.title && (
+                        <p className="text-sm text-red-500">{errors.title}</p>
+                      )}
                     </div>
 
                     <div className="space-y-2">
@@ -195,11 +262,15 @@ export default function BlogPostForm({ post, isOpen, onClose, onSave }: BlogPost
                       <Input
                         id="slug"
                         value={formData.slug}
-                        onChange={(e) => handleInputChange("slug", e.target.value)}
+                        onChange={(e) =>
+                          handleInputChange("slug", e.target.value)
+                        }
                         placeholder="post-url-slug"
                         className={errors.slug ? "border-red-500" : ""}
                       />
-                      {errors.slug && <p className="text-sm text-red-500">{errors.slug}</p>}
+                      {errors.slug && (
+                        <p className="text-sm text-red-500">{errors.slug}</p>
+                      )}
                       <p className="text-xs text-muted-foreground">
                         URL: /blog/{formData.slug}
                       </p>
@@ -210,12 +281,16 @@ export default function BlogPostForm({ post, isOpen, onClose, onSave }: BlogPost
                       <Textarea
                         id="excerpt"
                         value={formData.excerpt}
-                        onChange={(e) => handleInputChange("excerpt", e.target.value)}
+                        onChange={(e) =>
+                          handleInputChange("excerpt", e.target.value)
+                        }
                         placeholder="Brief description of the post"
                         rows={3}
                         className={errors.excerpt ? "border-red-500" : ""}
                       />
-                      {errors.excerpt && <p className="text-sm text-red-500">{errors.excerpt}</p>}
+                      {errors.excerpt && (
+                        <p className="text-sm text-red-500">{errors.excerpt}</p>
+                      )}
                     </div>
 
                     <div className="space-y-2">
@@ -223,15 +298,21 @@ export default function BlogPostForm({ post, isOpen, onClose, onSave }: BlogPost
                       <Textarea
                         id="content"
                         value={formData.content}
-                        onChange={(e) => handleInputChange("content", e.target.value)}
+                        onChange={(e) =>
+                          handleInputChange("content", e.target.value)
+                        }
                         placeholder="Write your blog post content here..."
                         rows={15}
                         className={errors.content ? "border-red-500" : ""}
                       />
-                      {errors.content && <p className="text-sm text-red-500">{errors.content}</p>}
+                      {errors.content && (
+                        <p className="text-sm text-red-500">{errors.content}</p>
+                      )}
                       <p className="text-xs text-muted-foreground">
-                        Word count: {formData.content.trim().split(/\s+/).length} words
-                        • Estimated read time: {calculateReadTime(formData.content)}
+                        Word count:{" "}
+                        {formData.content.trim().split(/\s+/).length} words •
+                        Estimated read time:{" "}
+                        {calculateReadTime(formData.content)}
                       </p>
                     </div>
                   </CardContent>
@@ -248,7 +329,9 @@ export default function BlogPostForm({ post, isOpen, onClose, onSave }: BlogPost
                       <Input
                         id="metaTitle"
                         value={formData.metaTitle}
-                        onChange={(e) => handleInputChange("metaTitle", e.target.value)}
+                        onChange={(e) =>
+                          handleInputChange("metaTitle", e.target.value)
+                        }
                         placeholder="SEO title (leave empty to use post title)"
                       />
                     </div>
@@ -258,7 +341,9 @@ export default function BlogPostForm({ post, isOpen, onClose, onSave }: BlogPost
                       <Textarea
                         id="metaDescription"
                         value={formData.metaDescription}
-                        onChange={(e) => handleInputChange("metaDescription", e.target.value)}
+                        onChange={(e) =>
+                          handleInputChange("metaDescription", e.target.value)
+                        }
                         placeholder="SEO description (leave empty to use excerpt)"
                         rows={3}
                       />
@@ -276,7 +361,12 @@ export default function BlogPostForm({ post, isOpen, onClose, onSave }: BlogPost
                   <CardContent className="space-y-4">
                     <div className="space-y-2">
                       <Label htmlFor="status">Status</Label>
-                      <Select value={formData.status} onValueChange={(value) => handleInputChange("status", value)}>
+                      <Select
+                        value={formData.status}
+                        onValueChange={(value) =>
+                          handleInputChange("status", value)
+                        }
+                      >
                         <SelectTrigger>
                           <SelectValue placeholder="Select status" />
                         </SelectTrigger>
@@ -292,7 +382,12 @@ export default function BlogPostForm({ post, isOpen, onClose, onSave }: BlogPost
 
                     <div className="space-y-2">
                       <Label htmlFor="author">Author</Label>
-                      <Select value={formData.author} onValueChange={(value) => handleInputChange("author", value)}>
+                      <Select
+                        value={formData.author}
+                        onValueChange={(value) =>
+                          handleInputChange("author", value)
+                        }
+                      >
                         <SelectTrigger>
                           <SelectValue placeholder="Select author" />
                         </SelectTrigger>
@@ -311,8 +406,19 @@ export default function BlogPostForm({ post, isOpen, onClose, onSave }: BlogPost
                       <Input
                         id="publishedAt"
                         type="date"
-                        value={formData.publishedAt ? new Date(formData.publishedAt).toISOString().split('T')[0] : ""}
-                        onChange={(e) => handleInputChange("publishedAt", new Date(e.target.value))}
+                        value={
+                          formData.publishedAt
+                            ? new Date(formData.publishedAt)
+                                .toISOString()
+                                .split("T")[0]
+                            : ""
+                        }
+                        onChange={(e) =>
+                          handleInputChange(
+                            "publishedAt",
+                            new Date(e.target.value)
+                          )
+                        }
                       />
                     </div>
 
@@ -320,7 +426,9 @@ export default function BlogPostForm({ post, isOpen, onClose, onSave }: BlogPost
                       <Switch
                         id="featured"
                         checked={formData.featured}
-                        onCheckedChange={(checked) => handleInputChange("featured", checked)}
+                        onCheckedChange={(checked) =>
+                          handleInputChange("featured", checked)
+                        }
                       />
                       <Label htmlFor="featured">Featured Post</Label>
                     </div>
@@ -334,7 +442,12 @@ export default function BlogPostForm({ post, isOpen, onClose, onSave }: BlogPost
                   <CardContent className="space-y-4">
                     <div className="space-y-2">
                       <Label htmlFor="category">Category</Label>
-                      <Select value={formData.category} onValueChange={(value) => handleInputChange("category", value)}>
+                      <Select
+                        value={formData.category}
+                        onValueChange={(value) =>
+                          handleInputChange("category", value)
+                        }
+                      >
                         <SelectTrigger>
                           <SelectValue placeholder="Select category" />
                         </SelectTrigger>
@@ -355,7 +468,9 @@ export default function BlogPostForm({ post, isOpen, onClose, onSave }: BlogPost
                           value={tagInput}
                           onChange={(e) => setTagInput(e.target.value)}
                           placeholder="Add tag"
-                          onKeyPress={(e) => e.key === 'Enter' && (e.preventDefault(), addTag())}
+                          onKeyPress={(e) =>
+                            e.key === "Enter" && (e.preventDefault(), addTag())
+                          }
                         />
                         <Button type="button" onClick={addTag} size="sm">
                           Add
@@ -363,7 +478,12 @@ export default function BlogPostForm({ post, isOpen, onClose, onSave }: BlogPost
                       </div>
                       <div className="flex flex-wrap gap-2 mt-2">
                         {formData.tags.map((tag) => (
-                          <Badge key={tag} variant="secondary" className="cursor-pointer" onClick={() => removeTag(tag)}>
+                          <Badge
+                            key={tag}
+                            variant="secondary"
+                            className="cursor-pointer"
+                            onClick={() => removeTag(tag)}
+                          >
                             {tag} ×
                           </Badge>
                         ))}
@@ -395,29 +515,29 @@ export default function BlogPostForm({ post, isOpen, onClose, onSave }: BlogPost
             {/* Form Actions */}
             <div className="flex items-center justify-between pt-6 border-t">
               <div className="flex items-center gap-2">
-                {formData.featured && (
-                  <Badge variant="outline">Featured</Badge>
-                )}
-                <Badge variant={formData.status === "Published" ? "default" : "secondary"}>
+                {formData.featured && <Badge variant="outline">Featured</Badge>}
+                <Badge
+                  variant={
+                    formData.status === "Published" ? "default" : "secondary"
+                  }
+                >
                   {formData.status}
                 </Badge>
                 <div className="flex items-center gap-1 text-sm text-muted-foreground">
                   <Calendar className="h-3 w-3" />
-                  {formData.publishedAt ? new Date(formData.publishedAt).toLocaleDateString() : "Not set"}
+                  {formData.publishedAt
+                    ? new Date(formData.publishedAt).toLocaleDateString()
+                    : "Not set"}
                 </div>
                 <div className="flex items-center gap-1 text-sm text-muted-foreground">
                   <Clock className="h-3 w-3" />
                   {calculateReadTime(formData.content)}
                 </div>
               </div>
-              
+
               <div className="flex items-center gap-2">
                 <Button type="button" variant="outline" onClick={onClose}>
                   Cancel
-                </Button>
-                <Button type="button" variant="outline" className="gap-2">
-                  <Eye className="h-4 w-4" />
-                  Preview
                 </Button>
                 <Button type="submit" className="gap-2">
                   <Save className="h-4 w-4" />

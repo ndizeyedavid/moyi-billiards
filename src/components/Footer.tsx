@@ -12,9 +12,9 @@ import Link from "next/link";
 import Image from "next/image";
 
 const data = {
-  facebookLink: "https://facebook.com/moyibilliards",
+  facebookLink: "https://www.instagram.com/the_great_moyi_billiards/",
   instaLink: "https://www.instagram.com/the_great_moyi_billiards/",
-  twitterLink: "https://twitter.com/moyibilliards",
+  twitterLink: "https://www.instagram.com/the_great_moyi_billiards/",
   // githubLink: "https://github.com/moyibilliards",
   services: {
     store: "/store",
@@ -34,8 +34,8 @@ const data = {
   },
   contact: {
     email: "thegreatmoyibilliards760@gmail.com",
-    phone: "+250 790194868",
-    address: "RWANDA,Kigali",
+    phone: "+250790194868",
+    address: "Rwanda,Kigali, Gasabo, Gisozi",
   },
   company: {
     name: "Moyi Billiards",

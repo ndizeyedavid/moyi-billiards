@@ -18,6 +18,7 @@ import {
   Search,
   BarChart3,
   User,
+  HelpCircle,
 } from "lucide-react";
 import Image from "next/image";
 
@@ -35,6 +36,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { Toaster } from "sonner";
 
 const navigationItems = [
   {
@@ -69,11 +71,7 @@ const navigationItems = [
   // },
 ];
 
-function DashboardContent({
-  children,
-}: {
-  children: React.ReactNode;
-}) {
+function DashboardContent({ children }: { children: React.ReactNode }) {
   const [searchQuery, setSearchQuery] = useState("");
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const pathname = usePathname();
@@ -116,7 +114,7 @@ function DashboardContent({
           </div>
 
           <div className="flex items-center gap-4">
-            <div className="relative hidden md:block">
+            {/* <div className="relative hidden md:block">
               <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
               <Input
                 placeholder="Search..."
@@ -130,7 +128,7 @@ function DashboardContent({
 
             <Button variant="outline" size="icon">
               <Bell className="h-4 w-4" />
-            </Button>
+            </Button> */}
 
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
@@ -140,19 +138,25 @@ function DashboardContent({
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end">
                 <div className="px-2 py-1.5 text-sm font-medium">
-                  {user?.name || 'Admin'}
+                  {user?.name || "Admin"}
                 </div>
                 <div className="px-2 py-1.5 text-xs text-muted-foreground">
                   {user?.email}
                 </div>
                 <DropdownMenuSeparator />
-                <DropdownMenuItem>
+                {/* <DropdownMenuItem>
                   <User className="h-4 w-4 mr-2" />
                   Profile
                 </DropdownMenuItem>
                 <DropdownMenuItem>
                   <Settings className="h-4 w-4 mr-2" />
                   Settings
+                </DropdownMenuItem> */}
+                <DropdownMenuItem asChild>
+                  <Link href="/admin/dashboard/help" className="flex items-center">
+                    <HelpCircle className="h-4 w-4 mr-2" />
+                    Help
+                  </Link>
                 </DropdownMenuItem>
                 <DropdownMenuSeparator />
                 <DropdownMenuItem onClick={handleLogout}>
@@ -248,6 +252,7 @@ export default function DashboardLayout({
     <AuthProvider>
       <ProtectedRoute>
         <DashboardContent>{children}</DashboardContent>
+        <Toaster richColors />
       </ProtectedRoute>
     </AuthProvider>
   );

@@ -272,7 +272,7 @@ export default function DashboardPage() {
                             <div>
                               <h3 className="font-medium">{product.name}</h3>
                               <p className="text-sm text-muted-foreground">
-                                {product.price.toLocaleString()} RWF
+                                {Number(product.price).toLocaleString()} RWF
                               </p>
                               <div className="flex items-center gap-2 mt-1">
                                 <Calendar className="h-3 w-3" />

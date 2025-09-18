@@ -62,9 +62,14 @@ export default function ContactPage() {
           phone: formData.phone,
           subject: formData.subject,
           message: formData.message,
-          category: formData.inquiryType === "general" ? "General Inquiry" : 
-                   formData.inquiryType === "product" ? "Product Inquiry" :
-                   formData.inquiryType === "support" ? "Support" : "General Inquiry",
+          category:
+            formData.inquiryType === "general"
+              ? "General Inquiry"
+              : formData.inquiryType === "product"
+              ? "Product Inquiry"
+              : formData.inquiryType === "support"
+              ? "Support"
+              : "General Inquiry",
         }),
       });
 
@@ -179,8 +184,8 @@ export default function ContactPage() {
               Get in Touch
             </h1>
             <p className="text-xl text-muted-foreground max-w-2xl mx-auto">
-              Ready to transform your space with a premium pool table? We&apos;re
-              here to help you find the perfect fit.
+              Ready to transform your space with a premium pool table?
+              We&apos;re here to help you find the perfect fit.
             </p>
           </motion.div>
 
@@ -196,8 +201,8 @@ export default function ContactPage() {
                 <CardHeader>
                   <CardTitle className="text-2xl">Send us a Message</CardTitle>
                   <p className="text-muted-foreground">
-                    Fill out the form below and we&apos;ll get back to you as soon as
-                    possible.
+                    Fill out the form below and we&apos;ll get back to you as
+                    soon as possible.
                   </p>
                 </CardHeader>
                 <CardContent>
@@ -209,7 +214,8 @@ export default function ContactPage() {
                     >
                       <CheckCircle className="h-5 w-5 text-green-600" />
                       <span className="text-green-800 dark:text-green-200">
-                        Message sent successfully! We&apos;ll get back to you soon.
+                        Message sent successfully! We&apos;ll get back to you
+                        soon.
                       </span>
                     </motion.div>
                   )}
@@ -292,7 +298,7 @@ export default function ContactPage() {
                         onChange={handleInputChange}
                         required
                         className="w-full px-3 py-2 border border-border rounded-lg bg-background focus:outline-none focus:ring-2 focus:ring-rose-500 focus:border-transparent"
-                        placeholder="What&apos;s this about?"
+                        placeholder="What's this about?"
                       />
                     </div>
 
@@ -438,7 +444,7 @@ export default function ContactPage() {
               <CardContent>
                 <div className="aspect-video bg-muted rounded-lg flex items-center justify-center overflow-hidden">
                   <iframe
-                    src="https://www.google.com/maps/embed?pb=!1m14!1m12!1m3!1d3987.4155584251407!2d30.042845074487666!3d-1.9885578867958926!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!5e0!3m2!1sen!2srw!4v1738528747518!5m2!1sen!2srw"
+                    src="https://www.google.com/maps/embed?pb=!1m14!1m12!1m3!1d9303.2034369393!2d30.065137398446875!3d-1.929010937273599!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!5e0!3m2!1sen!2srw!4v1758133576893!5m2!1sen!2srw"
                     width="100%"
                     height="100%"
                     style={{ border: 0 }}

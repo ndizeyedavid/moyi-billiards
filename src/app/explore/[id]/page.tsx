@@ -139,7 +139,7 @@ export default function ProductDetailPage({ params }: PageProps) {
               Back to Products
             </Link>
             <span>/</span>
-            <span>{product.category}</span>
+            <span>{product.category || "Standard"}</span>
             <span>/</span>
             <span className="text-foreground">{product.name}</span>
           </div>
@@ -219,7 +219,9 @@ export default function ProductDetailPage({ params }: PageProps) {
             <div className="space-y-6">
               <div>
                 <div className="flex items-center gap-2 mb-2">
-                  <Badge variant="secondary">{product.category}</Badge>
+                  <Badge variant="secondary">
+                    {product.category || "Standard"}
+                  </Badge>
                   {product.featured && (
                     <Badge
                       variant="outline"
@@ -236,7 +238,7 @@ export default function ProductDetailPage({ params }: PageProps) {
 
                 <div className="flex items-baseline gap-3 mb-6">
                   <span className="text-3xl font-bold text-foreground">
-                    {product.price.toLocaleString()} {product.currency}
+                    {Number(product.price).toLocaleString()} {product.currency}
                   </span>
                 </div>
 
@@ -273,7 +275,7 @@ export default function ProductDetailPage({ params }: PageProps) {
                     Contact Supplier on WhatsApp
                   </Button>
 
-                  <div className="flex gap-3">
+                  <div className="flex gap-3 hidden">
                     <Button
                       variant="outline"
                       className="flex-1"

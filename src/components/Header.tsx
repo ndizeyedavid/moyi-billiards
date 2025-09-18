@@ -270,7 +270,7 @@ export default function Header() {
                             </div>
                             {product.description && (
                               <div className="text-muted-foreground text-sm">
-                                {product.category} -{" "}
+                                {product.category || "Standard"} -{" "}
                                 {Number(product.price).toLocaleString()}{" "}
                                 {product.currency}
                               </div>
