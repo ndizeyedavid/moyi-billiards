@@ -209,11 +209,11 @@ export default function Footer() {
               <span className="block sm:inline">
                 A product by{" "}
                 <Link
-                  href="https://lerony.com/"
+                  href="https://davidndizeye.vercel.app/"
                   target="_blank"
                   className="hover:text-rose-600 underline"
                 >
-                  Lerony Co
+                  David Ndizeye
                 </Link>
                 . All rights reserved.
               </span>
